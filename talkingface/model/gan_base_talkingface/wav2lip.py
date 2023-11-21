@@ -12,6 +12,7 @@ import cv2
 from talkingface.model.layers import Conv2d, Conv2dTranspose, nonorm_Conv2d
 from talkingface.model.abstract_talkingface import AbstractTalkingFace
 from talkingface.data.dataprocess.wav2lip_process import Wav2LipPreprocessForInference, Wav2LipAudio
+from talkingface.utils import ensure_dir
 
 class SyncNet_color(nn.Module):
     def __init__(self):
@@ -270,10 +271,13 @@ class Wav2Lip(AbstractTalkingFace):
             audio_src = os.path.join(self.config['data_root'], file_src) + '.mp4'
             video = os.path.join(self.config['data_root'], file_src) + '.mp4'
 
-            command = 'ffmpeg -loglevel panic -y -i {} -strict -2 {}'.format(audio_src, 'temp/wav2lip/temp.wav')
-            subprocess.call(command, shell=True)
-            temp_audio = f'temp/wav2lip/temp.wav'
 
+            ensure_dir(os.path.join(self.config['temp_dir']))
+
+            command = 'ffmpeg -loglevel panic -y -i {} -strict -2 {}'.format(audio_src, os.path.join(self.config['temp_dir'], 'temp')+'.wav')
+            subprocess.call(command, shell=True)
+
+            temp_audio = os.path.join(self.config['temp_dir'], 'temp')+'.wav'
             wav = audio_processor.load_wav(temp_audio, 16000)
             mel = audio_processor.melspectrogram(wav)
 
@@ -315,7 +319,7 @@ class Wav2Lip(AbstractTalkingFace):
             for i, (img_batch, mel_batch, frames, coords) in enumerate(gen):
                 if i == 0:
                     frame_h, frame_w = full_frames[0].shape[:-1]
-                    output_video_path = 'temp/wav2lip/result{idx}.mp4'
+                    output_video_path = os.path.join(self.config['temp_dir'], 'temp')+'.mp4'
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 或者尝试 'avc1'
                     out = cv2.VideoWriter(output_video_path, fourcc, 25, (frame_w, frame_h))
 
@@ -343,7 +347,7 @@ class Wav2Lip(AbstractTalkingFace):
                 os.makedirs(vid_directory)
 
             command = 'ffmpeg -loglevel panic -y -i {} -i {} -strict -2 -q:v 1 {}'.format(temp_audio, 
-                                    'temp/wav2lip/result{idx}.mp4', vid)
+                                    os.path.join(self.config['temp_dir'], 'temp')+'.mp4', vid)
             process_status = subprocess.call(command, shell=True)
             if process_status == 0:
                 file_dict['generated_video'].append(vid)
