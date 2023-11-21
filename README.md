@@ -143,8 +143,8 @@ python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx
 
 ### 权重文件
 
-- LSE评估需要的权重: syncnet_v2.model [百度网盘下载]()
-- wav2lip需要的lip expert 权重：lipsync_expert.pth [百度网下载]()
+- LSE评估需要的权重: syncnet_v2.model [百度网盘下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
+- wav2lip需要的lip expert 权重：lipsync_expert.pth [百度网下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
 
 ## 可选论文：
 ### Aduio_driven talkingface
