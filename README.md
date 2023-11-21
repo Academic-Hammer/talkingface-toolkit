@@ -1,10 +1,10 @@
 # talkingface-toolkit
 ## 框架整体介绍
 ### checkpoints
-主要保存的是训练和评估模型所需要的额外的预训练模型，在对应文件夹的README有更详细的介绍
+主要保存的是训练和评估模型所需要的额外的预训练模型，在对应文件夹的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/checkpoints/README.md)有更详细的介绍
 
 ### datset
-存放数据集以及数据集预处理之后的数据，详细内容见dataset里的README
+存放数据集以及数据集预处理之后的数据，详细内容见dataset里的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/dataset/README.md)
 
 ### saved
 存放训练过程中保存的模型checkpoint, 训练过程中保存模型时自动创建
