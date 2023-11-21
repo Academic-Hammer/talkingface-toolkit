@@ -1,0 +1,10 @@
+*.pth
+*.model
+dataset/lrs2
+dataset/lrw
+dataset/mead
+log
+log_tensorboard
+results
+temp
+__pycache__

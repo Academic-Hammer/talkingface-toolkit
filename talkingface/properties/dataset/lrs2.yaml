@@ -1,0 +1,10 @@
+train_filelist: 'dataset/lrs2/filelist/train.txt'
+test_filelist: 'dataset/lrs2/filelist/test.txt'
+val_filelist: 'dataset/lrs2/filelist/val.txt'
+
+data_root: 'dataset/lrs2/data/main'
+preprocessed_root: 'dataset/lrs2/preprocessed_data'
+
+need_preprocess: True
+
+preprocess_batch_size: 32
