@@ -43,7 +43,9 @@ def get_model(model_name):
         Recommender: model class
     """
     model_submodule = [
-        "gan_base_talkingface",
+        "audio_driven_talkingface",
+        "video_driven_talkingface",
+        "nerf_based_talkingface",
     ]
 
     model_file_name = model_name.lower()
