@@ -12,7 +12,10 @@ from scipy import signal
 from scipy.io import wavfile
 
 class Wav2LipAudio:
-    """This class is used for audio processing of wav2lip"""
+    """This class is used for audio processing of wav2lip
+
+    这个类提供了从音频到mel谱的方法
+    """
 
     def __init__(self, config):
         self.config = config
@@ -147,6 +150,12 @@ class Wav2LipAudio:
 
 
 class Wav2LipPreprocessForInference:
+    """This class is used for preprocessing of wav2lip inference
+
+    face_detect: detect face in the image
+    datagen: generate data for inference
+
+    """
     def __init__(self, config):
         self.config = config
         self.fa = face_detection.FaceAlignment(face_detection.LandmarksType._2D, flip_input=False, 

@@ -18,10 +18,10 @@ class AbstractMetric(object):
         """Get the dictionary of a metric.
 
         Args:
-            dataobject(DataStruct): it contains all the information needed to calculate metrics.
+            dataobject: (dict): it contains all the information needed to calculate metrics.
 
         Returns:
-            dict: such as ``{'metric@10': 3153, 'metric@20': 0.3824}``
+            dict: such as ``{LSE-C': 0.0000}``
         """
         raise NotImplementedError("Method [calculate_metric] should be implemented.")
     
@@ -39,7 +39,7 @@ class SyncMetric(AbstractMetric):
         """Get the list of videos.
 
         Args:
-            dataobject(DataStruct): it contains all the information needed to calculate metrics.
+            dataobject(DataStruct): (dict): it contains all the information needed to calculate metrics.
 
         Returns:
             list: a list of videos.
@@ -53,7 +53,7 @@ class SyncMetric(AbstractMetric):
             dataobject(DataStruct): it contains all the information needed to calculate metrics.
 
         Returns:
-            float: the value of the metric.
+            dict: {"LSE-C": LSE_C, "LSE-D": LSE_D}
         """
         raise NotImplementedError("Method [metric_info] should be implemented.")
     
@@ -72,27 +72,27 @@ class VideoQMetric(AbstractMetric):
         """Calculate the value of the metric.
 
         Args:
-            dataobject(DataStruct): it contains all the information needed to calculate metrics.
+            dataobject(DataStruct): (dict): it contains all the information needed to calculate metrics.
 
         Returns:
             float: the value of the metric.
         """
         raise NotImplementedError("Method [metric_info] should be implemented.")
     
-class AudioQMetric(AbstractMetric):
-    """Base class for all Audio Quality metrics. If you want to implement a Audio Quality metric, you can inherit this class.
-    """
-    def __init__(self, config):
-        super(SyncMetric, self).__init__(config)
+# class AudioQMetric(AbstractMetric):
+#     """Base class for all Audio Quality metrics. If you want to implement a Audio Quality metric, you can inherit this class.
+#     """
+#     def __init__(self, config):
+#         super(SyncMetric, self).__init__(config)
 
-    def metric_info(self, dataobject):
-        """Calculate the value of the metric.
+#     def metric_info(self, dataobject):
+#         """Calculate the value of the metric.
 
-        Args:
-            dataobject(DataStruct): it contains all the information needed to calculate metrics.
+#         Args:
+#             dataobject(DataStruct): it contains all the information needed to calculate metrics.
 
-        Returns:
-            float: the value of the metric.
-        """
-        raise NotImplementedError("Method [metric_info] should be implemented.")
+#         Returns:
+#             float: the value of the metric.
+#         """
+#         raise NotImplementedError("Method [metric_info] should be implemented.")
 

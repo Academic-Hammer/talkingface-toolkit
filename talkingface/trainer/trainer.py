@@ -179,9 +179,7 @@ class Trainer(AbstractTrainer):
             show_progress (bool): Show the progress of training epoch. Defaults to ``False``.
 
         Returns:
-            float/tuple: The sum of loss returned by all batches in this epoch. If the loss in each batch contains
-            multiple parts and the model return these multiple parts loss instead of the sum of loss, it will return a
-            tuple which includes the sum of loss in each part.
+            the averaged loss of this epoch
         """
         self.model.train()
         loss_func = loss_func or self.model.calculate_loss
@@ -473,6 +471,13 @@ class Trainer(AbstractTrainer):
                     break
     @torch.no_grad()
     def evaluate(self, load_best_model=True, model_file=None):
+        """
+        Evaluate the model based on the test data.
+
+        args: load_best_model: bool, whether to load the best model in the training process.
+                model_file: str, the model file you want to evaluate.
+
+        """
         if load_best_model:
             checkpoint_file = model_file or self.saved_model_file
             checkpoint = torch.load(checkpoint_file, map_location=self.device)
@@ -505,9 +510,7 @@ class Wav2LipTrainer(Trainer):
             show_progress (bool): Show the progress of training epoch. Defaults to ``False``.
 
         Returns:
-            float/tuple: The sum of loss returned by all batches in this epoch. If the loss in each batch contains
-            multiple parts and the model return these multiple parts loss instead of the sum of loss, it will return a
-            tuple which includes the sum of loss in each part.
+            the averaged loss of this epoch
         """
         self.model.train()
 

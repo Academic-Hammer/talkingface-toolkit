@@ -19,7 +19,9 @@ class AbstractTalkingFace(nn.Module):
             interaction (Interaction): Interaction class of the batch.
 
         Returns:
-            torch.Tensor: Training loss, shape: []
+            dict: {"loss": loss, "xxx": xxx}
+            返回是一个字典,loss 这个键必须有,它代表了加权之后的总loss。
+            因为有时总loss可能由多个部分组成。xxx代表其它各部分loss
         """
         raise NotImplementedError
     
@@ -32,6 +34,19 @@ class AbstractTalkingFace(nn.Module):
         Returns:
             video/image numpy/tensor
         """
+        raise NotImplementedError
+    
+    def generate_batch():
+
+        """
+        根据划分的test_filelist 批量生成数据。
+
+        Returns: dict: {"generated_video": [generated_video], "real_video": [real_video] }
+                    必须是一个字典数据, 且字典的键一个时generated_video, 一个是real_video,值都是列表，
+                    分别对应生成的视频和真实的视频。且两个列表的长度应该相同。
+                    即每个生成视频都有对应的真实视频（或近似对应的视频）。
+        """
+
         raise NotImplementedError
 
     def other_parameter(self):

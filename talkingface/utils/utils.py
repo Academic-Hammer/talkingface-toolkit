@@ -425,12 +425,6 @@ def get_preprocess(dataset_name):
         raise ValueError(
             "`dataset_name` [{}] is not the name of an existing dataset.".format(dataset_name)
             )
-    # if importlib.util.find_spec(module_path, __name__):
-    #     model_module = importlib.import_module(module_path, __name__)
-    # else:
-    #     raise ValueError(
-    #         "`dataset_name` [{}] is not the name of an existing dataset.".format(model_name)
-    #     )
     return preprocess_class
 
 def create_dataset(config):

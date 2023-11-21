@@ -9,7 +9,7 @@ from scipy.io import wavfile
 from talkingface.evaluator.metric_models import *
 from shutil import rmtree
 from skimage.metrics import structural_similarity as ssim
-from talkingface.evaluator.base_metric import AbstractMetric, SyncMetric, VideoQMetric, AudioQMetric
+from talkingface.evaluator.base_metric import AbstractMetric, SyncMetric, VideoQMetric
 from talkingface.utils.logger import set_color
 
 class LSE(SyncMetric):

@@ -11,11 +11,6 @@ def cluster_info(module_name):
         - ``smaller``: Whether the smaller metric value represents better performance,
           range in ``True`` and ``False``, default to ``False``.
 
-    Note:
-        For ``metric_type``: in current RecBole, all the "grouped-score" metrics are ranking-based and all the
-        "non-grouped-score" metrics are value-based. To keep with our paper, we adopted the more formal terms:
-        ``RANKING`` and ``VALUE``.
-
     Args:
         module_name (str): the name of module ``recbole.evaluator.metrics``.
 

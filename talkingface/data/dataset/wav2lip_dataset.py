@@ -10,15 +10,16 @@ import torch.backends.cudnn as cudnn
 from torch.utils import data as data_utils
 import numpy as np
 import librosa
+from talkingface.data.dataset.dataset import Dataset
 
 from glob import glob
 
 import os, random, cv2, argparse
 
-class Wav2LipDataset(torch.utils.data.Dataset):
-    def __init__(self, config, split):
-        self.config = config
-        self.all_videos = self.get_image_list(self.config['preprocessed_root'], split)
+class Wav2LipDataset(Dataset):
+    def __init__(self, config, datasplit):
+        super().__init__(config, datasplit)
+        self.all_videos = self.get_image_list(self.config['preprocessed_root'], datasplit)
         self.audio_processor = Wav2LipAudio(self.config)
 
     
@@ -130,33 +131,11 @@ class Wav2LipDataset(torch.utils.data.Dataset):
             try:
                 wavpath = join(vidname, "audio.wav")
                 wav = self.audio_processor.load_wav(wavpath, self.config['sample_rate'])
-                # mfcc = zip(*python_speech_features.mfcc(wav,self.config['sample_rate']))
-                # mfcc = np.stack([np.array(i) for i in mfcc])
-                # print(mfcc.shape)
-
-                # print(wav)
                 orig_mel = self.audio_processor.melspectrogram(wav).T
-                # print(orig_mel.shape)
-                # print(mfcc.shape)
-                # print(orig_mel)
             except Exception as e:
                 continue
-            # wavpath = join(vidname, "audio.wav")
-            # wav = self.audio_processor.load_wav(wavpath, self.config['sample_rate'])
-            # orig_mel = self.audio_processor.melspectrogram(wav).T
 
-            mel = self.crop_audio_window(orig_mel.copy(), img_name)
-            #                 # 从Mel频谱中重建近似的线性频谱
-            # linear_spectrogram = np.dot(np.linalg.pinv(mel), 80)
-
-            # # 对线性频谱取对数
-            # log_spectrogram = librosa.power_to_db(linear_spectrogram)
-
-            # # 从对数频谱计算MFCC
-            # mfcc = librosa.feature.mfcc(S=log_spectrogram, n_mfcc=13)
-            # mfcc = np.expand_dims(mfcc,axis=0).astype('float32')
-            # print(mel.shape)
-            # print(mfcc.shape)   
+            mel = self.crop_audio_window(orig_mel.copy(), img_name) 
 
             if (mel.shape[0] != self.config['syncnet_mel_step_size']):
                 continue
