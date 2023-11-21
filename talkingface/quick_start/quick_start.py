@@ -75,7 +75,7 @@ def run_talkingface(
     if config['need_preprocess'] and (not (os.path.exists(config['preprocessed_root'])) or not (os.listdir(config['preprocessed_root']))):
         get_preprocess(config['dataset'])(config).run()
 
-    train_dataset, val_dataset, test_dataset = create_dataset(config)
+    train_dataset, val_dataset = create_dataset(config)
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=config["batch_size"], shuffle=True
     )

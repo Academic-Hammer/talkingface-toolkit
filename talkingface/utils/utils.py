@@ -445,7 +445,7 @@ def create_dataset(config):
         )
     dataset_class = getattr(dataset_module, model_name+'Dataset')
 
-    return dataset_class(config, config['train_filelist']), dataset_class(config, config['val_filelist']), dataset_class(config, config['test_filelist'])
+    return dataset_class(config, config['train_filelist']), dataset_class(config, config['val_filelist'])
 
 
 
