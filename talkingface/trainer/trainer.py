@@ -27,43 +27,7 @@ from talkingface.utils import(
 )
 from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
 from talkingface.evaluator import Evaluator
-# from talkingface.model.gan_base_talkingface import SyncNet_color
-# syncnet = SyncNet_color().to("cuda")
 
-
-# def load_syncnet(syncnet):
-#     from talkingface.model.gan_base_talkingface import SyncNet_color
-#     syncnet = SyncNet_color().to("cuda")
-#     for p in syncnet.parameters():
-#         p.requires_grad = False
-#     checkpoint = torch.load("checkpoints/wav2lip/lipsync_expert.pth")
-#     s = checkpoint["state_dict"]
-#     new_s = {}
-#     for k, v in s.items():
-#         new_s[k.replace('module.', '')] = v
-#     syncnet.load_state_dict(new_s)
-#     return syncnet
-
-# logloss = nn.BCELoss()
-# def cosine_loss(a, v, y):
-#     d = nn.functional.cosine_similarity(a, v)
-#     loss = logloss(d.unsqueeze(1), y)
-
-#     return loss
-
-# # for p in syncnet.parameters():
-# #     p.requires_grad = False
-
-
-# recon_loss = nn.L1Loss()
-# def get_sync_loss(mel, g):
-#     g = g[:, :, :, g.size(3)//2:]
-#     g = torch.cat([g[:, :, i] for i in range(5)], dim=1)
-#     # B, 3 * T, H//2, W
-#     a, v = syncnet(mel, g)
-#     y = torch.ones(g.size(0), 1).float().to('cuda')
-#     return cosine_loss(a, v, y)
-# load_syncnet(syncnet)
 
 class AbstractTrainer(object):
     r"""Trainer Class is used to manage the training and evaluation processes of recommender system models.
