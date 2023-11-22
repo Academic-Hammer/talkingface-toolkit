@@ -186,3 +186,6 @@ python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx
 ## 作业要求
 - 确保可以仅在命令行输入模型和数据集名称就可以训练、验证。（部分仓库没有提供训练代码的，可以不训练）
 - 每个组都要提交一个README文件，写明完成的功能、最终实现的训练、验证截图、所使用的依赖、成员分工等。
+
+
+
