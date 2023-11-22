@@ -203,7 +203,7 @@ class Trainer(AbstractTrainer):
         Returns:
             loss
         """
-        print('Evaluating for {} steps'.format(self.eval_steps))
+        print('Valid for {} steps'.format(self.eval_steps))
         self.model.eval()
         total_loss_dict = {}
         iter_data = (
@@ -219,17 +219,6 @@ class Trainer(AbstractTrainer):
             step += 1
             batched_data.to(self.device)    
             losses_dict = self.model.calculate_loss(batched_data, valid=True)
-            # if isinstance(losses, tuple):
-            #     loss_tuple = tuple(per_loss.item() for per_loss in losses)
-            #     total_loss = (
-            #         loss_tuple
-            #         if total_loss is None
-            #         else tuple(map(sum, zip(total_loss, loss_tuple)))
-            #     )
-            # else:
-            #     total_loss = (
-            #         losses.item() if total_loss is None else total_loss + losses.item()
-            #     )
             for key, value in losses_dict.items():
                 if key in total_loss_dict:
                     if not torch.is_tensor(value):
@@ -245,7 +234,7 @@ class Trainer(AbstractTrainer):
                     else:
                         losses_dict[key] = value.item()
                         total_loss_dict[key] = value.item()
-            iter_data.set_description(set_color(f"Evaluating {losses_dict}", "pink"))
+            iter_data.set_description(set_color(f"Valid {losses_dict}", "pink"))
         average_loss_dict = {}
         for key, value in total_loss_dict.items():
             average_loss_dict[key] = value/step
@@ -528,14 +517,14 @@ class Wav2LipTrainer(Trainer):
         
     
     def _valid_epoch(self, valid_data, loss_func=None, show_progress=False):
-        print('Evaluating'.format(self.eval_step))
+        print('Valid'.format(self.eval_step))
         self.model.eval()
         total_loss_dict = {}
         iter_data = (
             tqdm(valid_data,
                 total=len(valid_data),
                 ncols=None,
-                desc=set_color("Evaluating", "pink")
+                desc=set_color("Valid", "pink")
             )
             if show_progress
             else valid_data
@@ -559,7 +548,6 @@ class Wav2LipTrainer(Trainer):
                     else:
                         losses_dict[key] = value.item()
                         total_loss_dict[key] = value.item()
-            # iter_data.set_description(set_color(f"Evaluating {losses_dict}", "pink"))
         average_loss_dict = {}
         for key, value in total_loss_dict.items():
             average_loss_dict[key] = value/step
