@@ -14,6 +14,7 @@ training_arguments = [
     'learner', 'learning_rate',
     'eval_step', 'stopping_step',
     'weight_decay', 'resume'
+    'train'
 ]
 
 evaluation_arguments  = [

@@ -90,8 +90,13 @@ def run_talkingface(
     trainer = get_trainer(config["model"])(config, model)
 
     # model training
-    trainer.fit(train_data_loader, val_data_loader, saved=saved, show_progress=config["show_progress"])
+    if config['train']:
+        trainer.fit(train_data_loader, val_data_loader, saved=saved, show_progress=config["show_progress"])
+        # print(1)
 
+    if not config['train'] and evaluate_model_file is None:
+        print("error: no model file to evaluate without training")
+        return
     # model evaluating
     trainer.evaluate(model_file = evaluate_model_file)
 

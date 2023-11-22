@@ -32,7 +32,6 @@ img_size: 96
 fps: 25
 mel_step_size: 16
 
-train: True
 batch_size: 16
 ngpu: 1
 
