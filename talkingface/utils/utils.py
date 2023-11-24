@@ -44,7 +44,7 @@ def get_model(model_name):
     """
     model_submodule = [
         "audio_driven_talkingface",
-        "video_driven_talkingface",
+        "image_driven_talkingface",
         "nerf_based_talkingface",
         "text_to_speech",
         "voice_conversion"
