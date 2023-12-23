@@ -2,7 +2,7 @@ import os
 
 from logging import getLogger
 from time import time
-import dlib, json, subprocess
+# import dlib, json, subprocess
 import torch.nn.functional as F
 import glob
 import numpy as np
@@ -14,6 +14,7 @@ import torch.cuda.amp as amp
 from torch import nn
 from pathlib import Path
 
+import talkingface.model.audio_driven_talkingface.model_vits
 from talkingface.utils import(
     ensure_dir,
     get_local_time,
@@ -557,19 +558,24 @@ class Wav2LipTrainer(Trainer):
 
 
 class VITSTrainer(Trainer):
-    def __init__(self, config, model):
+    def __init__(self, config, model,
+                 decoder=talkingface.model.audio_driven_talkingface.model_vits.MultiPeriodDiscriminator,
+                 decoder_optimizer=torch.optim.AdamW):
         super(VITSTrainer, self).__init__(config, model)
 
+        self.net_g = self.model
+        self.optim_g = self.optimizer
+        self.net_d = decoder(use_spectral_norm=False).cuda(0)
+        self.optim_d = decoder_optimizer(self.net_d.parameters(), lr=2e-4, betas=(0.8, 0.99), eps=1e-9)
+
+        from torch.cuda.amp import GradScaler
+
+        self.scaler = GradScaler(enabled=True)
+
     def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
-        from torch.cuda.amp import autocast, GradScaler
-        from talkingface.utils.vits_utils.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
-        from talkingface.utils.vits_utils import commons
-        from talkingface.utils.vits_utils import utils
-
-
-        self.model.train()
-
-        loss_func = loss_func or self.model.calculate_loss
+        self.net_g.train()
+        self.net_d.train()
+        loss_func = loss_func or self.net_g.calculate_loss
         total_loss_dict = {}
         iter_data = (
             tqdm(
@@ -582,73 +588,64 @@ class VITSTrainer(Trainer):
         )
         step = 0
 
-        for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths) in enumerate(iter_data):
-            x, x_lengths = x.cuda(0, non_blocking=True), x_lengths.cuda(0, non_blocking=True)
-            spec, spec_lengths = spec.cuda(0, non_blocking=True), spec_lengths.cuda(0, non_blocking=True)
-            y, y_lengths = y.cuda(0, non_blocking=True), y_lengths.cuda(0, non_blocking=True)
-
-            with autocast(enabled=True):
-                y_hat, l_length, attn, ids_slice, x_mask, z_mask, \
-                    (z, z_p, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths)
-
-                mel = spec_to_mel_torch(
-                    spec=spec,
-                    n_fft=1024,
-                    num_mels=80,
-                    sampling_rate=22050,
-                    fmin=0.0,
-                    fmax=None)
-                y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
-                y_hat_mel = mel_spectrogram_torch(
-                    y=y_hat.squeeze(1),
-                    n_fft=1024,
-                    num_mels=80,
-                    sampling_rate=22050,
-                    hop_size=256,
-                    win_size=1024,
-                    fmin=0.0,
-                    fmax=None
-                )
-
-                y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size)  # slice
-
-                # Discriminator
-                y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
-                with autocast(enabled=False):
-                    loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_d_hat_r, y_d_hat_g)
-                    loss_disc_all = loss_disc
-            optim_d.zero_grad()
-            scaler.scale(loss_disc_all).backward()
-            scaler.unscale_(optim_d)
-            grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
-            scaler.step(optim_d)
-
-            with autocast(enabled=True):
-                # Generator
-                y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
-                with autocast(enabled=False):
-                    loss_dur = torch.sum(l_length.float())
-                    loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-                    loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
-
-                    loss_fm = feature_loss(fmap_r, fmap_g)
-                    loss_gen, losses_gen = generator_loss(y_d_hat_g)
-                    loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
-            optim_g.zero_grad()
-            scaler.scale(loss_gen_all).backward()
-            scaler.unscale_(optim_g)
-            grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
-            scaler.step(optim_g)
-            scaler.update()
-
+        for batch_idx, interaction in enumerate(iter_data):
+            self.optim_g.zero_grad()
+            self.optim_d.zero_grad()
             step += 1
+            # 计算第一部分loss
+            interaction_box = (interaction, self.net_d)
+            g_losses_dict, net_d_feature = loss_func(interaction_box)
+            loss_disc_all = g_losses_dict["loss_disc_all"]
+
+            # 计算第二部分loss
+            interaction_box = (net_d_feature, self.net_g)
+            d_losses_dict = self.net_d.calculate_loss(interaction_box)
+            loss_gen_all = d_losses_dict["loss_gen_all"]
+
+            for losses_dict in [g_losses_dict, d_losses_dict]:
+                for key, value in losses_dict.items():  # 对所有返回的loss值都看一遍
+                    if key in total_loss_dict:
+                        if not torch.is_tensor(value):
+                            total_loss_dict[key] += value
+                        # 如果键已经在总和字典中，累加当前值
+                        else:
+                            losses_dict[key] = value.item()
+                            total_loss_dict[key] += value.item()
+                    else:
+                        if not torch.is_tensor(value):
+                            total_loss_dict[key] = value
+                        # 否则，是新的键，将当前值添加到字典中
+                        else:
+                            losses_dict[key] = value.item()
+                            total_loss_dict[key] = value.item()
+            iter_data.set_description(set_color(f"train {epoch_idx} {g_losses_dict} {d_losses_dict}", "pink"))
+
+            # self._check_nan(loss)
+            # loss.backward()
+
+            self.scaler.scale(loss_disc_all).backward()
+            self.scaler.unscale_(self.optim_d)
+            # grad_norm_d = commons.clip_grad_value_(self.net_d.parameters(), None)
+            self.scaler.step(self.optim_d)
+
+            self.scaler.scale(loss_gen_all).backward()
+            self.scaler.unscale_(self.optim_g)
+            # grad_norm_g = commons.clip_grad_value_(self.net_g.parameters(), None)
+            self.scaler.step(self.optim_g)
+            self.scaler.update()
+
+            # self.optim_g.step()
+            # self.optim_d.step()
+
+        average_loss_dict = {}
+        for key, value in total_loss_dict.items():
+            average_loss_dict[key] = value / step
         return average_loss_dict
-
-
 
     def _valid_epoch(self, valid_data, show_progress=False):
         print('Valid'.format(self.eval_step))
-        self.model.eval()
+        self.net_g.eval()
+        self.net_d.eval()
         total_loss_dict = {}
         iter_data = (
             tqdm(valid_data,
@@ -659,3 +656,37 @@ class VITSTrainer(Trainer):
             if show_progress
             else valid_data
         )
+        step = 0
+        with torch.no_grad():
+            for batch_idx, interaction in enumerate(iter_data):
+                step += 1
+                # 计算第一部分loss
+                interaction_box = (interaction, self.net_d)
+                g_losses_dict, net_d_feature = self.net_g.calculate_loss(interaction_box)
+
+                # 计算第二部分loss
+                interaction_box = (net_d_feature, self.net_g)
+                d_losses_dict = self.net_d.calculate_loss(interaction_box)
+
+                for losses_dict in [g_losses_dict, d_losses_dict]:
+                    for key, value in losses_dict.items():
+                        if key in total_loss_dict:
+                            if not torch.is_tensor(value):
+                                total_loss_dict[key] += value
+                            # 如果键已经在总和字典中，累加当前值
+                            else:
+                                losses_dict[key] = value.item()
+                                total_loss_dict[key] += value.item()
+                        else:
+                            if not torch.is_tensor(value):
+                                total_loss_dict[key] = value
+                            # 否则，将当前值添加到字典中
+                            else:
+                                losses_dict[key] = value.item()
+                                total_loss_dict[key] = value.item()
+        average_loss_dict = {}
+        for key, value in total_loss_dict.items():
+            average_loss_dict[key] = value / step
+        if losses_dict["sync_loss"] < .75:
+            self.model.config["syncnet_wt"] = 0.01
+        return average_loss_dict

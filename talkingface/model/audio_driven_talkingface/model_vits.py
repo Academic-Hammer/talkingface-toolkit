@@ -425,10 +425,25 @@ class MultiPeriodDiscriminator(AbstractTalkingFace):
         Returns: {"loss": loss, "r_losses": r_losses, "g_losses": g_losses}
 
         """
+        from torch.cuda.amp import autocast
 
-        y_d_hat_r, y_d_hat_g = interaction
-        loss_disc, losses_disc_r, losses_disc_g = self.discriminator_loss(y_d_hat_r, y_d_hat_g)
-        return {"loss": loss_disc, "r_losses": losses_disc_r, "g_losses": losses_disc_g}
+        _interaction, net_g = interaction
+        (y, y_hat), l_length, (y_mel, y_hat_mel), (z_p, logs_q, m_p, logs_p, z_mask) = _interaction
+        with autocast(enabled=False):
+            # Generator
+            y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = self.forward(y, y_hat)
+            with autocast(enabled=False):
+                loss_dur = torch.sum(l_length.float())
+                # loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
+                loss_mel = F.l1_loss(y_mel, y_hat_mel) * 45
+                # loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
+                loss_kl = net_g.kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * 1.0
+
+                loss_fm = net_g.feature_loss(fmap_r, fmap_g)
+                loss_gen, losses_gen = net_g.generator_loss(y_d_hat_g)
+                loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
+        return {"loss_gen_all": loss_gen_all, "loss_gen": loss_gen, "loss_fm": loss_fm,
+                "loss_mel": loss_mel, "loss_dur": loss_dur, "loss_kl": loss_kl}
 
     def generate_batch(self):
         pass
@@ -590,18 +605,55 @@ class SynthesizerTrn(AbstractTalkingFace):
                 "loss_mel": loss_mel, "loss_dur": loss_dur, "loss_kl": loss_kl}
 
         """
-        hps, (y_mel, y_hat_mel), \
-            (y_d_hat_r, y_d_hat_g, fmap_r, fmap_g), \
-            (l_length, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q)) = interaction
-        loss_dur = torch.sum(l_length.float())
-        loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-        loss_kl = self.kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
+        from torch.cuda.amp import autocast, GradScaler
+        from talkingface.utils.vits_utils.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
+        from talkingface.utils.vits_utils import commons
 
-        loss_fm = self.feature_loss(fmap_r, fmap_g)
-        loss_gen, losses_gen = self.generator_loss(y_d_hat_g)
-        loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
-        return {"loss": loss_gen_all, "loss_gen": loss_gen, "loss_fm": loss_fm,
-                "loss_mel": loss_mel, "loss_dur": loss_dur, "loss_kl": loss_kl}
+        _interaction, net_d = interaction
+        x, x_lengths = _interaction["text"], _interaction["text_lengths"]
+        spec, spec_lengths = _interaction["spec"], _interaction["spec_lengths"]
+        y, y_lengths = _interaction["wav"], _interaction["wav_lengths"]
+        x, x_lengths = x.cuda(0, non_blocking=True), x_lengths.cuda(0, non_blocking=True)
+        spec, spec_lengths = spec.cuda(0, non_blocking=True), spec_lengths.cuda(0, non_blocking=True)
+        y, y_lengths = y.cuda(0, non_blocking=True), y_lengths.cuda(0, non_blocking=True)
+
+        with autocast(enabled=True):
+            y_hat, l_length, attn, ids_slice, x_mask, z_mask, \
+                (z, z_p, m_p, logs_p, m_q, logs_q) = self.forward(x, x_lengths, spec, spec_lengths)
+
+            mel = spec_to_mel_torch(
+                spec=spec,
+                n_fft=1024,
+                num_mels=80,
+                sampling_rate=22050,
+                fmin=0.0,
+                fmax=None)
+            # y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
+            y_mel = commons.slice_segments(mel, ids_slice, segment_size=8192 // 256)
+            y_hat_mel = mel_spectrogram_torch(
+                y=y_hat.squeeze(1),
+                n_fft=1024,
+                num_mels=80,
+                sampling_rate=22050,
+                hop_size=256,
+                win_size=1024,
+                fmin=0.0,
+                fmax=None
+            )
+
+            # y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size)  # slice
+            y = commons.slice_segments(y, ids_slice * 256, segment_size=8192)  # slice
+
+            # Discriminator
+            y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
+            with autocast(enabled=False):
+                loss_disc, losses_disc_r, losses_disc_g = net_d.discriminator_loss(y_d_hat_r, y_d_hat_g)
+                loss_disc_all = loss_disc
+
+        net_d_feature = ((y, y_hat), l_length, (y_mel, y_hat_mel), (z_p, logs_q, m_p, logs_p, z_mask))
+
+        return {"loss_disc_all": loss_disc_all, "losses_disc_r": losses_disc_r, "losses_disc_g": losses_disc_g}, net_d_feature
+
 
     def generate_batch(self):
         pass

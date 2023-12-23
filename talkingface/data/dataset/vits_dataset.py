@@ -100,7 +100,9 @@ class TextAudioLoader(Dataset):
 
 
 class TextAudioCollate():
-    """ Zero-pads model inputs and targets
+    """
+    Zero-pads model inputs and targets \n
+    对batch进行处理，进行长度上的补齐
     """
 
     def __init__(self, return_ids=False):
@@ -147,8 +149,19 @@ class TextAudioCollate():
             wav_lengths[i] = wav.size(1)
 
         if self.return_ids:
-            return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, ids_sorted_decreasing
-        return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths
+            return {"text_padded": text_padded,
+                    "text_lengths": text_lengths,
+                    "spec_padded": spec_padded,
+                    "spec_lengths": spec_lengths,
+                    "wav_padded": wav_padded,
+                    "wav_lengths": wav_lengths,
+                    "ids_sorted_decreasing": ids_sorted_decreasing}
+        return {"text": text_padded,
+                "text_lengths": text_lengths,
+                "spec": spec_padded,
+                "spec_lengths": spec_lengths,
+                "wav": wav_padded,
+                "wav_lengths": wav_lengths}
 
 
 class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):

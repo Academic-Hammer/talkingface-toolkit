@@ -5,7 +5,7 @@ from collections.abc import MutableMapping
 from logging import getLogger
 import os
 from torch.utils import data as data_utils
-from ray import tune
+# from ray import tune
 
 from talkingface.config import Config
 
