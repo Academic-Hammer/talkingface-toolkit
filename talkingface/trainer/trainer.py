@@ -365,10 +365,10 @@ class Trainer(AbstractTrainer):
         Returns:
             best result
         """
-        if saved and self.start_epoch >= self.epochs:
+        if saved and self.start_epoch >= self.epochs:  # 为什么最开始要检查一下是否保存模型？
             self._save_checkpoint(-1, verbose=verbose)
 
-        if not (self.config['resume_checkpoint_path'] == None ) and self.config['resume']:
+        if not (self.config['resume_checkpoint_path'] == None ) and self.config['resume']:  # 使用之前的模型继续训练
             self.resume_checkpoint(self.config['resume_checkpoint_path'])
         
         for epoch_idx in range(self.start_epoch, self.epochs):
@@ -381,7 +381,7 @@ class Trainer(AbstractTrainer):
             train_loss_output = self._generate_train_loss_output(
                 epoch_idx, training_start_time, training_end_time, train_loss)
             
-            if verbose:
+            if verbose:  # 记录此次的日志
                 self.logger.info(train_loss_output)
             # self._add_train_loss_to_tensorboard(epoch_idx, train_loss)
 
@@ -561,8 +561,101 @@ class VITSTrainer(Trainer):
         super(VITSTrainer, self).__init__(config, model)
 
     def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
-        pass
+        from torch.cuda.amp import autocast, GradScaler
+        from talkingface.utils.vits_utils.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
+        from talkingface.utils.vits_utils import commons
+        from talkingface.utils.vits_utils import utils
+
+
+        self.model.train()
+
+        loss_func = loss_func or self.model.calculate_loss
+        total_loss_dict = {}
+        iter_data = (
+            tqdm(
+                train_data,
+                total=len(train_data),
+                ncols=None,
+            )
+            if show_progress
+            else train_data
+        )
+        step = 0
+
+        for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths) in enumerate(iter_data):
+            x, x_lengths = x.cuda(0, non_blocking=True), x_lengths.cuda(0, non_blocking=True)
+            spec, spec_lengths = spec.cuda(0, non_blocking=True), spec_lengths.cuda(0, non_blocking=True)
+            y, y_lengths = y.cuda(0, non_blocking=True), y_lengths.cuda(0, non_blocking=True)
+
+            with autocast(enabled=True):
+                y_hat, l_length, attn, ids_slice, x_mask, z_mask, \
+                    (z, z_p, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths)
+
+                mel = spec_to_mel_torch(
+                    spec=spec,
+                    n_fft=1024,
+                    num_mels=80,
+                    sampling_rate=22050,
+                    fmin=0.0,
+                    fmax=None)
+                y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
+                y_hat_mel = mel_spectrogram_torch(
+                    y=y_hat.squeeze(1),
+                    n_fft=1024,
+                    num_mels=80,
+                    sampling_rate=22050,
+                    hop_size=256,
+                    win_size=1024,
+                    fmin=0.0,
+                    fmax=None
+                )
+
+                y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size)  # slice
+
+                # Discriminator
+                y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
+                with autocast(enabled=False):
+                    loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_d_hat_r, y_d_hat_g)
+                    loss_disc_all = loss_disc
+            optim_d.zero_grad()
+            scaler.scale(loss_disc_all).backward()
+            scaler.unscale_(optim_d)
+            grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
+            scaler.step(optim_d)
+
+            with autocast(enabled=True):
+                # Generator
+                y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
+                with autocast(enabled=False):
+                    loss_dur = torch.sum(l_length.float())
+                    loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
+                    loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
+
+                    loss_fm = feature_loss(fmap_r, fmap_g)
+                    loss_gen, losses_gen = generator_loss(y_d_hat_g)
+                    loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
+            optim_g.zero_grad()
+            scaler.scale(loss_gen_all).backward()
+            scaler.unscale_(optim_g)
+            grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
+            scaler.step(optim_g)
+            scaler.update()
+
+            step += 1
+        return average_loss_dict
+
 
 
     def _valid_epoch(self, valid_data, show_progress=False):
-        pass
+        print('Valid'.format(self.eval_step))
+        self.model.eval()
+        total_loss_dict = {}
+        iter_data = (
+            tqdm(valid_data,
+                 total=len(valid_data),
+                 ncols=None,
+                 desc=set_color("Valid", "pink")
+                 )
+            if show_progress
+            else valid_data
+        )

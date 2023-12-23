@@ -1,5 +1,5 @@
-training_files: "filelists/list.txt.cleaned",  # 当前数据划分为训练集的文件名列表存放位置，该文件的末尾是.txt，至于这里的.cleaned末尾是因为在数据预处理的时候会自动加上
-validation_files: "filelists/list_val.txt.cleaned",  # 当前数据划分为测试机的文件名列表存放位置
+training_files: "dataset/LJSpeech/filelists/list.txt.cleaned",  # 当前数据划分为训练集的文件名列表存放位置，该文件的末尾是.txt，至于这里的.cleaned末尾是因为在数据预处理的时候会自动加上
+validation_files: "dataset/LJSpeech/filelists/list_val.txt.cleaned",  # 当前数据划分为测试机的文件名列表存放位置
 text_cleaners: ["cjke_cleaners2"],  # 选择合适的cleaner，具体可以参考talkingface/utils/vits_utils/text/cleaners.py中的代码
 max_wav_value: 32768.0,
 sampling_rate: 22050,

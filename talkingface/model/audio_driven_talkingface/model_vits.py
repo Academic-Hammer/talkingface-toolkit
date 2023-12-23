@@ -11,16 +11,17 @@ import math
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
+from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
+from torch.utils.data import DataLoader
 
 from talkingface.utils.vits_utils import commons
 from talkingface.utils.vits_utils import monotonic_align
 
-from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
-from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
-
 from talkingface.utils.vits_utils.commons import init_weights, get_padding
 from talkingface.utils.vits_utils.transforms import piecewise_rational_quadratic_transform
 from talkingface.model.abstract_talkingface import AbstractTalkingFace
+from talkingface.data.dataset.vits_dataset import TextAudioLoader, TextAudioCollate, DistributedBucketSampler
 
 
 class StochasticDurationPredictor(nn.Module):
@@ -419,19 +420,33 @@ class MultiPeriodDiscriminator(AbstractTalkingFace):
         """
         Calculate the training loss for a batch data.
         Args:
-            interaction: interaction在此处应该是一个元组，里面是self.forward里面的前两个返回值(y_d_rs, y_d_gs)
+            interaction: interaction在此处应该是一个元组batch
 
         Returns: {"loss": loss, "r_losses": r_losses, "g_losses": g_losses}
 
         """
-        from talkingface.evaluator.metrics_vits import discriminator_loss
 
         y_d_hat_r, y_d_hat_g = interaction
-        loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_d_hat_r, y_d_hat_g)
+        loss_disc, losses_disc_r, losses_disc_g = self.discriminator_loss(y_d_hat_r, y_d_hat_g)
         return {"loss": loss_disc, "r_losses": losses_disc_r, "g_losses": losses_disc_g}
 
     def generate_batch(self):
         pass
+
+    def discriminator_loss(self, disc_real_outputs, disc_generated_outputs):
+        loss = 0
+        r_losses = []
+        g_losses = []
+        for dr, dg in zip(disc_real_outputs, disc_generated_outputs):
+            dr = dr.float()
+            dg = dg.float()
+            r_loss = torch.mean((1 - dr) ** 2)
+            g_loss = torch.mean(dg ** 2)
+            loss += (r_loss + g_loss)
+            r_losses.append(r_loss.item())
+            g_losses.append(g_loss.item())
+
+        return loss, r_losses, g_losses
 
 
 class SynthesizerTrn(AbstractTalkingFace):
@@ -566,35 +581,68 @@ class SynthesizerTrn(AbstractTalkingFace):
     def calculate_loss(self, interaction, valid=False):
         """
         Calculate the training loss for a batch data.
-        interaction参数里面的结构是：
-            (hps, (y_mel, y_hat_mel), \
-            (y_d_hat_r, y_d_hat_g, fmap_r, fmap_g), \
-            (l_length, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q)))
+        trainer通过调用这个函数进行网络的前向传递，一个interaction是一个batch
         Args:
-            interaction: 一个元组
+            interaction: 一个step中的一个batch
             valid: 是否是valid
 
         Returns: {"loss": loss_gen_all, "loss_gen": loss_gen, "loss_fm": loss_fm,
                 "loss_mel": loss_mel, "loss_dur": loss_dur, "loss_kl": loss_kl}
 
         """
-        from talkingface.evaluator.metrics_vits import kl_loss, feature_loss, generator_loss
-
         hps, (y_mel, y_hat_mel), \
             (y_d_hat_r, y_d_hat_g, fmap_r, fmap_g), \
             (l_length, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q)) = interaction
         loss_dur = torch.sum(l_length.float())
         loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-        loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
+        loss_kl = self.kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
-        loss_fm = feature_loss(fmap_r, fmap_g)
-        loss_gen, losses_gen = generator_loss(y_d_hat_g)
+        loss_fm = self.feature_loss(fmap_r, fmap_g)
+        loss_gen, losses_gen = self.generator_loss(y_d_hat_g)
         loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
         return {"loss": loss_gen_all, "loss_gen": loss_gen, "loss_fm": loss_fm,
                 "loss_mel": loss_mel, "loss_dur": loss_dur, "loss_kl": loss_kl}
 
     def generate_batch(self):
         pass
+
+    def kl_loss(self, z_p, logs_q, m_p, logs_p, z_mask):
+        """
+        z_p, logs_q: [b, h, t_t]
+        m_p, logs_p: [b, h, t_t]
+        """
+        z_p = z_p.float()
+        logs_q = logs_q.float()
+        m_p = m_p.float()
+        logs_p = logs_p.float()
+        z_mask = z_mask.float()
+
+        kl = logs_p - logs_q - 0.5
+        kl += 0.5 * ((z_p - m_p) ** 2) * torch.exp(-2. * logs_p)
+        kl = torch.sum(kl * z_mask)
+        l = kl / torch.sum(z_mask)
+        return l
+
+    def generator_loss(self, disc_outputs):
+        loss = 0
+        gen_losses = []
+        for dg in disc_outputs:
+            dg = dg.float()
+            l = torch.mean((1 - dg) ** 2)
+            gen_losses.append(l)
+            loss += l
+
+        return loss, gen_losses
+
+    def feature_loss(self, fmap_r, fmap_g):
+        loss = 0
+        for dr, dg in zip(fmap_r, fmap_g):
+            for rl, gl in zip(dr, dg):
+                rl = rl.float().detach()
+                gl = gl.float()
+                loss += torch.mean(torch.abs(rl - gl))
+
+        return loss * 2
 
     def infer(self, x, x_lengths, sid=None, noise_scale=1, length_scale=1, noise_scale_w=1., max_len=None):
         x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
