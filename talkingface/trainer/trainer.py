@@ -554,4 +554,15 @@ class Wav2LipTrainer(Trainer):
         if losses_dict["sync_loss"] < .75:
             self.model.config["syncnet_wt"] = 0.01
         return average_loss_dict
-    
+
+
+class VITSTrainer(Trainer):
+    def __init__(self, config, model):
+        super(VITSTrainer, self).__init__(config, model)
+
+    def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
+        pass
+
+
+    def _valid_epoch(self, valid_data, show_progress=False):
+        pass
