@@ -8,7 +8,7 @@ import torch
 import torch.optim as optim
 from tqdm import tqdm
 
-import talkingface.model.text_to_speech.model_vits
+import talkingface.model.text_to_speech.vits
 from talkingface.utils import(
     ensure_dir,
     get_local_time,

@@ -464,7 +464,8 @@ class MultiPeriodDiscriminator(AbstractTalkingFace):
         return loss, r_losses, g_losses
 
 
-class SynthesizerTrn(AbstractTalkingFace):
+# class SynthesizerTrn(AbstractTalkingFace):
+class VITS(AbstractTalkingFace):
     """
     Synthesizer for Training
 
@@ -493,7 +494,7 @@ class SynthesizerTrn(AbstractTalkingFace):
                  use_sdp=True,
                  **kwargs):
 
-        super(SynthesizerTrn, self).__init__()
+        super(VITS, self).__init__()
         self.n_vocab = n_vocab
         self.spec_channels = spec_channels
         self.inter_channels = inter_channels
