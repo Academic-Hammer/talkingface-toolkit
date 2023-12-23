@@ -3,30 +3,21 @@ import os
 from logging import getLogger
 from time import time
 # import dlib, json, subprocess
-import torch.nn.functional as F
-import glob
 import numpy as np
 import torch
 import torch.optim as optim
-from torch.nn.utils.clip_grad import clip_grad_norm_
 from tqdm import tqdm
-import torch.cuda.amp as amp
-from torch import nn
-from pathlib import Path
 
-import talkingface.model.audio_driven_talkingface.model_vits
+import talkingface.model.text_to_speech.model_vits
 from talkingface.utils import(
     ensure_dir,
     get_local_time,
     early_stopping,
-    calculate_valid_score,
     dict2str,
     get_tensorboard,
     set_color,
-    get_gpu_usage,
     WandbLogger
 )
-from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
 from talkingface.evaluator import Evaluator
 
 
@@ -559,7 +550,7 @@ class Wav2LipTrainer(Trainer):
 
 class VITSTrainer(Trainer):
     def __init__(self, config, model,
-                 decoder=talkingface.model.audio_driven_talkingface.model_vits.MultiPeriodDiscriminator,
+                 decoder=talkingface.model.text_to_speech.model_vits.MultiPeriodDiscriminator,
                  decoder_optimizer=torch.optim.AdamW):
         super(VITSTrainer, self).__init__(config, model)
 

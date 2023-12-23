@@ -1,0 +1,1 @@
+from talkingface.model.text_to_speech.model_vits import SynthesizerTrn, MultiPeriodDiscriminator
