@@ -78,7 +78,7 @@ def run_talkingface(
     train_dataset, val_dataset = create_dataset(config)
 
     from talkingface.data.dataset.vits_dataset import TextAudioCollate
-    collate_fn = TextAudioCollate() if config["model"] == "vits" else None
+    collate_fn = TextAudioCollate() if config["model"] == "VITS" else None
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=config["batch_size"], shuffle=True, collate_fn=collate_fn,
     )

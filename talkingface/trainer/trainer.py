@@ -550,13 +550,13 @@ class Wav2LipTrainer(Trainer):
 
 class VITSTrainer(Trainer):
     def __init__(self, config, model,
-                 decoder=talkingface.model.text_to_speech.model_vits.MultiPeriodDiscriminator,
+                 decoder=talkingface.model.text_to_speech.vits.MultiPeriodDiscriminator,
                  decoder_optimizer=torch.optim.AdamW):
         super(VITSTrainer, self).__init__(config, model)
 
         self.net_g = self.model
         self.optim_g = self.optimizer
-        self.net_d = decoder(use_spectral_norm=False).cuda(0)
+        self.net_d = decoder(use_spectral_norm=False).cuda()
         self.optim_d = decoder_optimizer(self.net_d.parameters(), lr=2e-4, betas=(0.8, 0.99), eps=1e-9)
 
         from torch.cuda.amp import GradScaler

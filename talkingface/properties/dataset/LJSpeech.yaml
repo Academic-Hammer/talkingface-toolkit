@@ -1,5 +1,7 @@
-train_filelist: "dataset/LJSpeech/filelist/list.txt"  # 当前数据划分为训练集的文件名列表存放位置，该文件的末尾是.txt，至于这里的.cleaned末尾是因为在数据预处理的时候会自动加上
-val_filelist: "dataset/LJSpeech/filelist/list_val.txt"  # 当前数据划分为测试机的文件名列表存放位置
+train_filelist: "dataset/LJSpeech/filelist/list.txt.cleaned"  # 当前数据划分为训练集的文件名列表存放位置，该文件的末尾是.txt，至于这里的.cleaned末尾是因为在数据预处理的时候会自动加上
+train_filelist_raw: "dataset/LJSpeech/filelist/list.txt"
+val_filelist: "dataset/LJSpeech/filelist/list_val.txt.cleaned"  # 当前数据划分为测试机的文件名列表存放位置
+val_filelist_raw: "dataset/LJSpeech/filelist/list_val.txt"
 data_root: "dataset/LJSpeech/data"  # 当前数据集的数据根目录
 preprocessed_root: 'dataset/LJSpeech/preprocessed_data' # 当前数据集的预处理数据根目录
 
@@ -17,4 +19,4 @@ mel_fmin: 0.0
 mel_fmax: null
 add_blank: true
 n_speakers: 0  # 数据集中的说话人数，如果是一个人填0
-cleaned_text: false  # 因为数据处理过后就有cleaned后缀，这里就是true
+cleaned_text: true  # 因为数据处理过后就有cleaned后缀，这里就是true

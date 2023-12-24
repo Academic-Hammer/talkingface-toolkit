@@ -615,9 +615,9 @@ class SynthesizerTrn(AbstractTalkingFace):
         x, x_lengths = _interaction["text"], _interaction["text_lengths"]
         spec, spec_lengths = _interaction["spec"], _interaction["spec_lengths"]
         y, y_lengths = _interaction["wav"], _interaction["wav_lengths"]
-        x, x_lengths = x.cuda(0, non_blocking=True), x_lengths.cuda(0, non_blocking=True)
-        spec, spec_lengths = spec.cuda(0, non_blocking=True), spec_lengths.cuda(0, non_blocking=True)
-        y, y_lengths = y.cuda(0, non_blocking=True), y_lengths.cuda(0, non_blocking=True)
+        x, x_lengths = x.cuda(non_blocking=True), x_lengths.cuda(non_blocking=True)
+        spec, spec_lengths = spec.cuda(non_blocking=True), spec_lengths.cuda(non_blocking=True)
+        y, y_lengths = y.cuda(non_blocking=True), y_lengths.cuda(non_blocking=True)
 
         with autocast(enabled=hps["fp16_run"]):
             y_hat, l_length, attn, ids_slice, x_mask, z_mask, \
@@ -765,7 +765,7 @@ class VITS(AbstractTalkingFace):
             n_layers_q=self.config["n_layers_q"],
             use_spectral_norm=self.config["use_spectral_norm"],
             gin_channels=self.config["gin_channels"]
-        ).cuda(0)
+        ).cuda()
 
     def calculate_loss(self, interaction):
         return self.net_g.calculate_loss(interaction=interaction)

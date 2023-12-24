@@ -6,6 +6,7 @@ import torch
 import torch.utils.data
 
 from talkingface.data.dataset.dataset import Dataset
+from talkingface.data.dataprocess.vits_porcess import vits_process
 from talkingface.utils.vits_utils import commons
 from talkingface.utils.vits_utils.mel_processing import spectrogram_torch
 from talkingface.utils.vits_utils.utils import load_wav_to_torch, load_filepaths_and_text
@@ -21,6 +22,7 @@ class VITSDataset(Dataset):
             datasplit: 找到train_filelist的路径或val_filelist的路径
         """
         super().__init__(config, datasplit)
+        vits_process(config=config)
         self.dataset = TextAudioLoader(audiopaths_and_text=datasplit, hparams=config)
 
     def __getitem__(self, index):
