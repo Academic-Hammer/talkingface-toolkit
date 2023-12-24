@@ -208,7 +208,7 @@ class ResidualCouplingBlock(nn.Module):
         for i in range(n_flows):
             self.flows.append(
                 ResidualCouplingLayer(channels, hidden_channels, kernel_size, dilation_rate, n_layers,
-                                              gin_channels=gin_channels, mean_only=True))
+                                      gin_channels=gin_channels, mean_only=True))
             self.flows.append(Flip())
 
     def forward(self, x, x_mask, g=None, reverse=False):
@@ -376,8 +376,9 @@ class DiscriminatorS(torch.nn.Module):
 
 class MultiPeriodDiscriminator(AbstractTalkingFace):
     """
-    vits的decoder
+    vits的net_d
     """
+
     def __init__(self, use_spectral_norm=False):
         super(MultiPeriodDiscriminator, self).__init__()
         periods = [2, 3, 5, 7, 11]
@@ -427,17 +428,17 @@ class MultiPeriodDiscriminator(AbstractTalkingFace):
         """
         from torch.cuda.amp import autocast
 
-        _interaction, net_g = interaction
+        _interaction, net_g, hps = interaction
         (y, y_hat), l_length, (y_mel, y_hat_mel), (z_p, logs_q, m_p, logs_p, z_mask) = _interaction
-        with autocast(enabled=False):
+        with autocast(enabled=hps["fp16_run"]):
             # Generator
             y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = self.forward(y, y_hat)
             with autocast(enabled=False):
                 loss_dur = torch.sum(l_length.float())
                 # loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-                loss_mel = F.l1_loss(y_mel, y_hat_mel) * 45
+                loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps["c_mel"]
                 # loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
-                loss_kl = net_g.kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * 1.0
+                loss_kl = net_g.kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps["c_kl"]
 
                 loss_fm = net_g.feature_loss(fmap_r, fmap_g)
                 loss_gen, losses_gen = net_g.generator_loss(y_d_hat_g)
@@ -465,7 +466,7 @@ class MultiPeriodDiscriminator(AbstractTalkingFace):
 
 
 # class SynthesizerTrn(AbstractTalkingFace):
-class VITS(AbstractTalkingFace):
+class SynthesizerTrn(AbstractTalkingFace):
     """
     Synthesizer for Training
 
@@ -494,7 +495,7 @@ class VITS(AbstractTalkingFace):
                  use_sdp=True,
                  **kwargs):
 
-        super(VITS, self).__init__()
+        super(SynthesizerTrn, self).__init__()
         self.n_vocab = n_vocab
         self.spec_channels = spec_channels
         self.inter_channels = inter_channels
@@ -610,7 +611,7 @@ class VITS(AbstractTalkingFace):
         from talkingface.utils.vits_utils.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
         from talkingface.utils.vits_utils import commons
 
-        _interaction, net_d = interaction
+        _interaction, net_d, hps = interaction
         x, x_lengths = _interaction["text"], _interaction["text_lengths"]
         spec, spec_lengths = _interaction["spec"], _interaction["spec_lengths"]
         y, y_lengths = _interaction["wav"], _interaction["wav_lengths"]
@@ -618,32 +619,32 @@ class VITS(AbstractTalkingFace):
         spec, spec_lengths = spec.cuda(0, non_blocking=True), spec_lengths.cuda(0, non_blocking=True)
         y, y_lengths = y.cuda(0, non_blocking=True), y_lengths.cuda(0, non_blocking=True)
 
-        with autocast(enabled=True):
+        with autocast(enabled=hps["fp16_run"]):
             y_hat, l_length, attn, ids_slice, x_mask, z_mask, \
                 (z, z_p, m_p, logs_p, m_q, logs_q) = self.forward(x, x_lengths, spec, spec_lengths)
 
             mel = spec_to_mel_torch(
                 spec=spec,
-                n_fft=1024,
-                num_mels=80,
-                sampling_rate=22050,
-                fmin=0.0,
-                fmax=None)
+                n_fft=hps["filter_length"],
+                num_mels=hps["n_mel_channels"],
+                sampling_rate=hps["sampling_rate"],
+                fmin=hps["mel_fmin"],
+                fmax=hps["mel_fmax"])
             # y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
-            y_mel = commons.slice_segments(mel, ids_slice, segment_size=8192 // 256)
+            y_mel = commons.slice_segments(mel, ids_slice, segment_size=hps["segment_size"] // hps["hop_length"])
             y_hat_mel = mel_spectrogram_torch(
                 y=y_hat.squeeze(1),
-                n_fft=1024,
-                num_mels=80,
-                sampling_rate=22050,
-                hop_size=256,
-                win_size=1024,
-                fmin=0.0,
-                fmax=None
+                n_fft=hps["filter_length"],
+                num_mels=hps["n_mel_channels"],
+                sampling_rate=hps["sampling_rate"],
+                hop_size=hps["hop_length"],
+                win_size=hps["win_length"],
+                fmin=hps["mel_fmin"],
+                fmax=hps["mel_fmax"]
             )
 
             # y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size)  # slice
-            y = commons.slice_segments(y, ids_slice * 256, segment_size=8192)  # slice
+            y = commons.slice_segments(y, ids_slice * hps["hop_length"], segment_size=hps["segment_size"])  # slice
 
             # Discriminator
             y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
@@ -653,8 +654,8 @@ class VITS(AbstractTalkingFace):
 
         net_d_feature = ((y, y_hat), l_length, (y_mel, y_hat_mel), (z_p, logs_q, m_p, logs_p, z_mask))
 
-        return {"loss_disc_all": loss_disc_all, "losses_disc_r": losses_disc_r, "losses_disc_g": losses_disc_g}, net_d_feature
-
+        return {"loss_disc_all": loss_disc_all, "losses_disc_r": losses_disc_r,
+                "losses_disc_g": losses_disc_g}, net_d_feature
 
     def generate_batch(self):
         pass
@@ -735,12 +736,52 @@ class VITS(AbstractTalkingFace):
         return o_hat, y_mask, (z, z_p, z_hat)
 
 
+class VITS(AbstractTalkingFace):
+    """
+    基于talkingface框架的结构，是SynthesizerTrn的抽象
+    """
+    def __init__(self, config):
+        from talkingface.utils.vits_utils.text.symbols import symbols
+
+        super(VITS, self).__init__()
+        self.config = config
+        self.net_g = SynthesizerTrn(
+            n_vocab=len(symbols),
+            spec_channels=self.config["filter_length"] // 2 + 1,
+            segment_size=self.config["segment_size"] // self.config["hop_length"],
+            inter_channels=self.config["inter_channels"],
+            hidden_channels=self.config["hidden_channels"],
+            filter_channels=self.config["filter_channels"],
+            n_heads=self.config["n_heads"],
+            n_layers=self.config["n_layers"],
+            kernel_size=self.config["kernel_size"],
+            p_dropout=self.config["p_dropout"],
+            resblock=self.config["resblock"],
+            resblock_kernel_sizes=self.config["resblock_kernel_sizes"],
+            resblock_dilation_sizes=self.config["resblock_dilation_sizes"],
+            upsample_rates=self.config["upsample_rates"],
+            upsample_initial_channel=self.config["upsample_initial_channel"],
+            upsample_kernel_sizes=self.config["upsample_kernel_sizes"],
+            n_layers_q=self.config["n_layers_q"],
+            use_spectral_norm=self.config["use_spectral_norm"],
+            gin_channels=self.config["gin_channels"]
+        ).cuda(0)
+
+    def calculate_loss(self, interaction):
+        return self.net_g.calculate_loss(interaction=interaction)
+
+    def predict(self, interaction):
+        return self.net_g.predict(interaction=interaction)
+
+    def generate_batch(self):
+        return self.net_g.generate_batch()
+
+
 """
 ###################################
 ###### 原仓库modules.py的代码 #######
 ###################################
 """
-
 
 LRELU_SLOPE = 0.1
 

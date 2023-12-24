@@ -584,12 +584,12 @@ class VITSTrainer(Trainer):
             self.optim_d.zero_grad()
             step += 1
             # 计算第一部分loss
-            interaction_box = (interaction, self.net_d)
+            interaction_box = (interaction, self.net_d, self.config)
             g_losses_dict, net_d_feature = loss_func(interaction_box)
             loss_disc_all = g_losses_dict["loss_disc_all"]
 
             # 计算第二部分loss
-            interaction_box = (net_d_feature, self.net_g)
+            interaction_box = (net_d_feature, self.net_g, self.config)
             d_losses_dict = self.net_d.calculate_loss(interaction_box)
             loss_gen_all = d_losses_dict["loss_gen_all"]
 
