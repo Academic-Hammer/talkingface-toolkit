@@ -16,7 +16,7 @@
 
 ### 如何在这里进行训练：
 
-在最终训练之前，需要先初始化环境下载LJSpeech数据集，可以从[百度网盘下载](链接：https://pan.baidu.com/s/1oTBcZawH7YpysQeYk8-5fw?pwd=706s)，里面有两个版本，`LJSpeech-1.1.zip`是没有处理过的，`LJSpeech_processed.zip`是处理过可以直接用的。
+在最终训练之前，需要先初始化环境下载LJSpeech数据集，可以从[百度网盘下载](https://pan.baidu.com/s/1oTBcZawH7YpysQeYk8-5fw?pwd=706s)，里面有两个版本，`LJSpeech-1.1.zip`是没有处理过的，`LJSpeech_processed.zip`是处理过可以直接用的。
 
 假设下载的是处理过可以直接用的，将压缩包放到文件夹`dataset`下面，将压缩包中的内容解压到当前文件夹即可。
 
