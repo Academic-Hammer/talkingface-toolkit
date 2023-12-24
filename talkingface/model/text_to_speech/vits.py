@@ -776,6 +776,15 @@ class VITS(AbstractTalkingFace):
     def generate_batch(self):
         return self.net_g.generate_batch()
 
+    def kl_loss(self, z_p, logs_q, m_p, logs_p, z_mask):
+        return self.net_g.kl_loss(z_p, logs_q, m_p, logs_p, z_mask)
+
+    def generator_loss(self, disc_outputs):
+        return self.net_g.generator_loss(disc_outputs)
+
+    def feature_loss(self, fmap_r, fmap_g):
+        return self.net_g.feature_loss(fmap_r, fmap_g)
+
 
 """
 ###################################

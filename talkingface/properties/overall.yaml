@@ -13,7 +13,7 @@ reproducibility: True           # (bool) Whether or not to make results reproduc
 
 # Training Settings
 epochs: 300                     # (int) The number of training epochs.
-train_batch_size: 4          # (int) The training batch size.
+train_batch_size: 16          # (int) The training batch size.
 learner: adam                   # (str) The name of used optimizer.
 learning_rate: 0.0001            # (float) Learning rate.
 eval_step: 1                    # (int) The number of training epochs before an evaluation on the valid dataset.

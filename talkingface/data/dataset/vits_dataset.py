@@ -40,8 +40,8 @@ class TextAudioLoader(torch.utils.data.Dataset):
     """
 
     def __init__(self, audiopaths_and_text, hparams):
-        print(audiopaths_and_text)
-        print(hparams)
+        # print(audiopaths_and_text)
+        # print(hparams)
         self.audiopaths_and_text = load_filepaths_and_text(audiopaths_and_text)
         self.text_cleaners = hparams.text_cleaners
         self.max_wav_value = hparams.max_wav_value
@@ -57,8 +57,8 @@ class TextAudioLoader(torch.utils.data.Dataset):
         self.min_text_len = getattr(hparams, "min_text_len", 1)
         self.max_text_len = getattr(hparams, "max_text_len", 190)
 
-        random.seed(1234)
-        random.shuffle(self.audiopaths_and_text)
+        # random.seed(1234)
+        # random.shuffle(self.audiopaths_and_text)
         self._filter()
 
     def _filter(self):
@@ -83,7 +83,8 @@ class TextAudioLoader(torch.utils.data.Dataset):
         audiopath, text = audiopath_and_text[0], audiopath_and_text[1]
         text = self.get_text(text)
         spec, wav = self.get_audio(audiopath)
-        return {"text": text, "spec": spec, "wav": wav}
+        # return {"text": text, "spec": spec, "wav": wav}
+        return (text, spec, wav)
 
     def get_audio(self, filename):
         audio, sampling_rate = load_wav_to_torch(filename)
@@ -135,6 +136,7 @@ class TextAudioCollate():
         ------
         batch: [text_normalized, spec_normalized, wav_normalized]
         """
+        # batch = [batch["text"], batch["spec"], batch["wav"]]
         # Right zero-pad all one-hot text sequences to max input length
         _, ids_sorted_decreasing = torch.sort(
             torch.LongTensor([x[1].size(1) for x in batch]),

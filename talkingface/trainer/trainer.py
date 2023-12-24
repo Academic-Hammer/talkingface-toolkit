@@ -559,9 +559,8 @@ class VITSTrainer(Trainer):
         self.net_d = decoder(use_spectral_norm=False).cuda()
         self.optim_d = decoder_optimizer(self.net_d.parameters(), lr=2e-4, betas=(0.8, 0.99), eps=1e-9)
 
-        from torch.cuda.amp import GradScaler
-
-        self.scaler = GradScaler(enabled=True)
+        # from torch.cuda.amp import GradScaler
+        # self.scaler = GradScaler(enabled=True)
 
     def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
         self.net_g.train()
@@ -614,19 +613,21 @@ class VITSTrainer(Trainer):
             # self._check_nan(loss)
             # loss.backward()
 
-            self.scaler.scale(loss_disc_all).backward()
-            self.scaler.unscale_(self.optim_d)
-            # grad_norm_d = commons.clip_grad_value_(self.net_d.parameters(), None)
-            self.scaler.step(self.optim_d)
+            # self.scaler.scale(loss_disc_all).backward()
+            # self.scaler.unscale_(self.optim_d)
+            # # grad_norm_d = commons.clip_grad_value_(self.net_d.parameters(), None)
+            # self.scaler.step(self.optim_d)
+            #
+            # self.scaler.scale(loss_gen_all).backward()
+            # self.scaler.unscale_(self.optim_g)
+            # # grad_norm_g = commons.clip_grad_value_(self.net_g.parameters(), None)
+            # self.scaler.step(self.optim_g)
+            # self.scaler.update()
 
-            self.scaler.scale(loss_gen_all).backward()
-            self.scaler.unscale_(self.optim_g)
-            # grad_norm_g = commons.clip_grad_value_(self.net_g.parameters(), None)
-            self.scaler.step(self.optim_g)
-            self.scaler.update()
-
-            # self.optim_g.step()
-            # self.optim_d.step()
+            loss_disc_all.backward()
+            loss_gen_all.backward()
+            self.optim_g.step()
+            self.optim_d.step()
 
         average_loss_dict = {}
         for key, value in total_loss_dict.items():
