@@ -12,15 +12,34 @@ from talkingface.utils.vits_utils.utils import load_wav_to_torch, load_filepaths
 from talkingface.utils.vits_utils.text import text_to_sequence, cleaned_text_to_sequence
 
 
-class TextAudioLoader(Dataset):
+class VITSDataset(Dataset):
+    def __init__(self, config, datasplit):
+        """
+        初始化vits数据集
+        Args:
+            config: 数据集相关参数，调用父类构造函数后在self.config中
+            datasplit: 找到train_filelist的路径或val_filelist的路径
+        """
+        super().__init__(config, datasplit)
+        self.dataset = TextAudioLoader(audiopaths_and_text=datasplit, hparams=config)
+
+    def __getitem__(self, index):
+        return self.dataset.__getitem__(index)
+
+    def __len__(self):
+        return self.dataset.__len__()
+
+
+class TextAudioLoader(torch.utils.data.Dataset):
     """
         1) loads audio, text pairs
         2) normalizes text and converts them to sequences of integers
         3) computes spectrograms from audio files.
     """
 
-    def __init__(self, config, datasplit, audiopaths_and_text, hparams):
-        super().__init__(config, datasplit)
+    def __init__(self, audiopaths_and_text, hparams):
+        print(audiopaths_and_text)
+        print(hparams)
         self.audiopaths_and_text = load_filepaths_and_text(audiopaths_and_text)
         self.text_cleaners = hparams.text_cleaners
         self.max_wav_value = hparams.max_wav_value
