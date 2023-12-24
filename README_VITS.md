@@ -14,7 +14,7 @@
 
 使用当前的代码，在我的电脑上运行了半个小时1个epoch都没有结束……
 
-### 下面看看如何在这里进行训练吧：
+### 如何在这里进行训练：
 
 在最终训练之前，需要先初始化环境下载LJSpeech数据集，可以从[百度网盘下载]()，里面有两个版本，`LJSpeech-1.1.zip`是没有处理过的，`LJSpeech_processed.zip`是处理过可以直接用的。
 
@@ -56,10 +56,14 @@ python run_talkingface.py --model=VITS --dataset=LJSpeech
 - `torch==1.13.1+cu117`
 - `librosa==0.8.0`
 
-通过下面的方式安装环境（这是windows环境）：
+通过下面的方式安装环境（这个environment_vits.yml是windows环境下导出的，linux可能用不了，不过可以参考vits源码中的requirements.txt下载）：
 
-```
+```bash
 conda env create -f environment_vits.yml
 ```
 
 ## 成员分工
+
+- 柳绍祯：阅读vits源码，对代码重构做出理解，让最终的代码成功运行
+- 尹祯：整合数据集、参数配置、模型方面的代码
+- 白宇：整合训练和测试过程相关代码
