@@ -1,210 +1,144 @@
-# talkingface-toolkit
-## 框架整体介绍
-### checkpoints
-主要保存的是训练和评估模型所需要的额外的预训练模型，在对应文件夹的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/checkpoints/README.md)有更详细的介绍
+# talkingface_FastSpeech2
 
-### datset
-存放数据集以及数据集预处理之后的数据，详细内容见dataset里的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/dataset/README.md)
+### checkpoints:
 
-### saved
-存放训练过程中保存的模型checkpoint, 训练过程中保存模型时自动创建
+* HiFi-GAN.json: FastSpeech2 vocoder模型配置
+* generator_LJSpeech.pth.tar:HiFi-GAN模型参数文件
 
-### talkingface
-主要功能模块，包括所有核心代码
+### datset:
+
+* LJSpeech数据集：
+  * data：存放元数据
+  * filelist：数据集划分及部分辅助参数文件
+  * lexicon：音素表示文件库
+  * raw_data：初预处理数据
+  * preprocessed_data：预处理完成数据（duration，energy，mel，pitch等FastSpeech2使用的不同维度数据信息，TextGrid：MFA对齐工具）
+
+### saved：
+
+* fastspeech2：FastSpeech2的参数文件
+
+### talkingface：
 
 #### config
-根据模型和数据集名称自动生成所有模型、数据集、训练、评估等相关的配置信息
-```
-config/
 
-├── configurator.py
-
-```
 #### data
-- dataprocess：模型特有的数据处理代码，（可以是对方仓库自己实现的音频特征提取、推理时的数据处理）。如果实现的模型有这个需求，就要建立一对应的文件
-- dataset：每个模型都要重载`torch.utils.data.Dataset` 用于加载数据。每个模型都要有一个`model_name+'_dataset.py'`文件. `__getitem__()`方法的返回值应处理成字典类型的数据。 <span style="color:red">(核心部分)</span>
-```
-data/
 
-├── dataprocess
-
-| ├── wav2lip_process.py
-
-| ├── xxxx_process.py
-
-├── dataset
-
-| ├── wav2lip_dataset.py
-
-| ├── xxx_dataset.py
-```
+* dataset
+  * fastspeech2_dataset.py：定义FastSpeech2Dataset类
 
 #### evaluate
-主要涉及模型评估的代码
-LSE metric 需要的数据是生成的视频列表
-SSIM metric 需要的数据是生成的视频和真实的视频列表
 
-#### model
-实现的模型的网络和对应的方法 <span style="color:red">（核心部分）</span>
+#### model：
 
-主要分三类：
-- audio-driven (音频驱动)
-- image-driven （图像驱动）
-- nerf-based （基于神经辐射场的方法）
+* text_to_speech：
+  * fastspeech2.py：FastSpeech2模型类，继承AbstractTalkingFace类
 
-```
-model/
+#### properties：
 
-├── audio_driven_talkingface
+* dataset
+  * LJSpeech.yaml：LJSpeech数据集配置文件
+* model
+  * FastSpeech2.yaml：FastSpeech2模型配置文件
 
-| ├── wav2lip.py
-
-├── image_driven_talkingface
-
-| ├── xxxx.py
-
-├── nerf_based_talkingface
-
-| ├── xxxx.py
-
-├── abstract_talkingface.py
-
-```
-
-#### properties
-保存默认配置文件，包括：
-- 数据集配置文件
-- 模型配置文件
-- 通用配置文件
-
-需要根据对应模型和数据集增加对应的配置文件，通用配置文件`overall.yaml`一般不做修改
-```
-properties/
-
-├── dataset
-
-| ├── xxx.yaml
-
-├── model
-
-| ├── xxx.yaml
-
-├── overall.yaml
-
-```
+FastSpeech2_train.yaml：FastSpeech2训练文件
 
 #### quick_start
-通用的启动文件，根据传入参数自动配置数据集和模型，然后训练和评估（一般不需要修改）
-```
-quick_start/
 
-├── quick_start.py
+quick_start.py：关于dataloder部分做了简单修改，修改如下：
 
+
+```python
+    train_data_loader = data_utils.DataLoader(
+        train_dataset, batch_size=config["batch_size"], shuffle=True, collate_fn=train_dataset.collate_fn
+    )
+    val_data_loader = data_utils.DataLoader(
+        val_dataset, batch_size=config["batch_size"], shuffle=False, collate_fn=val_dataset.collate_fn
+    )
 ```
+
+添加了collate_fn参数
 
 #### trainer
-训练、评估函数的主类。在trainer中，如果可以使用基类`Trainer`实现所有功能，则不需要写一个新的。如果模型训练有一些特有部分，则需要重载`Trainer`。需要重载部分可能主要集中于: `_train_epoch()`, `_valid_epoch()`。 重载的`Trainer`应该命名为：`{model_name}Trainer`
-```
-trainer/
 
-├── trainer.py
+FastSpeech2Trainer.py：
 
-```
+* FastSpeech2Trainer：
+  * 添加get_model函数：获取加载权重文件的model和optimizer，因为本模型optimizer不是简单的Adam，故自定义此接口获取optimizer，并独立创建ScheduledOptim类
+  * 添加get_vocoder函数
+  * 重写_train_epoch，_valid_epoch
+  * 重写_save_checkpoint："optimizer": self.optimizer._optimizer.state_dict()
+  * 重写evaluate函数，因为此模型属于TTS类，不能使用框架所给Evaluate方法，又希望能完整的迁移，故自写evaluate函数，完成Evaluate部分内容
+* FastSpeech2Loss：FastSpeech2损失函数类
+* ScheduledOptim：FastSpeech2优化器类
 
 #### utils
-公用的工具类，包括`s3fd`人脸检测，视频抽帧、视频抽音频方法。还包括根据参数配置找对应的模型类、数据类等方法。
-一般不需要修改，但可以适当添加一些必须的且相对普遍的数据处理文件。
 
-## 使用方法
-### 环境要求
-- `python=3.8`
-- `torch==1.13.1+cu116`（gpu版，若设备不支持cuda可以使用cpu版）
-- `numpy==1.20.3`
-- `librosa==0.10.1`
+audio：处理mel图工具包
+fastspeech2_transformerblock：fastspeech2模型自定义块（varianceadaptor），vocoder块框架
 
-尽量保证上面几个包的版本一致
+text：fastspeech2处理文字包
 
-提供了两种配置其他环境的方法：
+data_process.py：添加LJSpeechPreprocess类，预处理LJSpeech数据集
+
+### 使用方法
+
+#### 环境要求
+
+```python
+g2p-en == 2.1.0
+inflect == 4.1.0
+librosa == 0.7.2
+matplotlib == 3.2.2
+numba == 0.48
+numpy == 1.19.0
+pypinyin==0.39.0
+pyworld == 0.2.10
+PyYAML==5.4.1
+scikit-learn==0.23.2
+scipy == 1.5.0
+soundfile==0.10.3.post1
+tensorboard == 2.2.2
+tgt == 1.4.4
+torch == 1.7.0
+tqdm==4.46.1
+unidecode == 1.1.1
 ```
-pip install -r requirements.txt
 
-or
+#### 训练和评估
 
-conda env create -f environment.yml
+```
+python run_talkingface.py --model FastSpeech2 --dataset LJSpeech --config_files "talkingface/properties/FastSpeech2_train.yaml"
 ```
 
-建议使用conda虚拟环境！！！
-
-### 训练和评估
-
-```bash
-python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx)
-```
-
-### 权重文件
-
-- LSE评估需要的权重: syncnet_v2.model [百度网盘下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
-- wav2lip需要的lip expert 权重：lipsync_expert.pth [百度网下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
-
-## 可选论文：
-### Aduio_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| MakeItTalk | [paper](https://arxiv.org/abs/2004.12992) | [code](https://github.com/yzhou359/MakeItTalk) |
-| MEAD | [paper](https://wywu.github.io/projects/MEAD/support/MEAD.pdf) | [code](https://github.com/uniBruce/Mead) |
-| RhythmicHead | [paper](https://arxiv.org/pdf/2007.08547v1.pdf) | [code](https://github.com/lelechen63/Talking-head-Generation-with-Rhythmic-Head-Motion) |
-| PC-AVS | [paper](https://arxiv.org/abs/2104.11116) | [code](https://github.com/Hangz-nju-cuhk/Talking-Face_PC-AVS) |
-| EVP | [paper](https://openaccess.thecvf.com/content/CVPR2021/papers/Ji_Audio-Driven_Emotional_Video_Portraits_CVPR_2021_paper.pdf) | [code](https://github.com/jixinya/EVP) |
-| LSP | [paper](https://arxiv.org/abs/2109.10595) | [code](https://github.com/YuanxunLu/LiveSpeechPortraits) |
-| EAMM | [paper](https://arxiv.org/pdf/2205.15278.pdf) | [code](https://github.com/jixinya/EAMM/) |
-| DiffTalk | [paper](https://arxiv.org/abs/2301.03786) | [code](https://github.com/sstzal/DiffTalk) |
-| TalkLip | [paper](https://arxiv.org/pdf/2303.17480.pdf) | [code](https://github.com/Sxjdwang/TalkLip) |
-| EmoGen | [paper](https://arxiv.org/pdf/2303.11548.pdf) | [code](https://github.com/sahilg06/EmoGen) |
-| SadTalker | [paper](https://arxiv.org/abs/2211.12194) | [code](https://github.com/OpenTalker/SadTalker) |
-| HyperLips | [paper](https://arxiv.org/abs/2310.05720) | [code](https://github.com/semchan/HyperLips) |
-| PHADTF | [paper](http://arxiv.org/abs/2002.10137) | [code](https://github.com/yiranran/Audio-driven-TalkingFace-HeadPose) |
-| VideoReTalking | [paper](https://arxiv.org/abs/2211.14758) | [code](https://github.com/OpenTalker/video-retalking#videoretalking--audio-based-lip-synchronization-for-talking-head-video-editing-in-the-wild-)
-|                                 |
 
 
+运行结果：
+参数：
 
-### Image_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| PIRenderer | [paper](https://arxiv.org/pdf/2109.08379.pdf) | [code](https://github.com/RenYurui/PIRender) |
-| StyleHEAT | [paper](https://arxiv.org/pdf/2203.04036.pdf) | [code](https://github.com/OpenTalker/StyleHEAT) |
-| MetaPortrait | [paper](https://arxiv.org/abs/2212.08062) | [code](https://github.com/Meta-Portrait/MetaPortrait) |
-|                                 |
-### Nerf-based talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| AD-NeRF | [paper](https://arxiv.org/abs/2103.11078) | [code](https://github.com/YudongGuo/AD-NeRF) |
-| GeneFace | [paper](https://arxiv.org/abs/2301.13430) | [code](https://github.com/yerfor/GeneFace) |
-| DFRF | [paper](https://arxiv.org/abs/2207.11770) | [code](https://github.com/sstzal/DFRF) |
-|                                 |
-### text_to_speech
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| VITS | [paper](https://arxiv.org/abs/2106.06103) | [code](https://github.com/jaywalnut310/vits) |
-| Glow TTS | [paper](https://arxiv.org/abs/2005.11129) | [code](https://github.com/jaywalnut310/glow-tts) |
-| FastSpeech2 | [paper](https://arxiv.org/abs/2006.04558v1) | [code](https://github.com/ming024/FastSpeech2) |
-| StyleTTS2 | [paper](https://arxiv.org/abs/2306.07691) | [code](https://github.com/yl4579/StyleTTS2) |
-| Grad-TTS | [paper](https://arxiv.org/abs/2105.06337) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/Grad-TTS) | 
-| FastSpeech | [paper](https://arxiv.org/abs/1905.09263) | [code](https://github.com/xcmyz/FastSpeech) |
-|                                 |
-### voice_conversion
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| StarGAN-VC | [paper](http://www.kecl.ntt.co.jp/people/kameoka.hirokazu/Demos/stargan-vc2/index.html) | [code](https://github.com/kamepong/StarGAN-VC) |
-| Emo-StarGAN | [paper](https://www.researchgate.net/publication/373161292_Emo-StarGAN_A_Semi-Supervised_Any-to-Many_Non-Parallel_Emotion-Preserving_Voice_Conversion) | [code](https://github.com/suhitaghosh10/emo-stargan) |
-| adaptive-VC | [paper](https://arxiv.org/abs/1904.05742) | [code](https://github.com/jjery2243542/adaptive_voice_conversion) |
-| DiffVC | [paper](https://arxiv.org/abs/2109.13821) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/DiffVC) |
-| Assem-VC | [paper](https://arxiv.org/abs/2104.00931) | [code](https://github.com/maum-ai/assem-vc) |
-|               |
-
-## 作业要求
-- 确保可以仅在命令行输入模型和数据集名称就可以训练、验证。（部分仓库没有提供训练代码的，可以不训练）
-- 每个组都要提交一个README文件，写明完成的功能、最终实现的训练、验证截图、所使用的依赖、成员分工等。
+![微信截图_20240120221429](./Readme_pic/微信截图_20240120221429.png)
 
 
+![微信截图_20240120221442](./Readme_pic/微信截图_20240120221442.png)
+
+模型：
+
+![微信截图_20240120221452](./Readme_pic/微信截图_20240120221452.png)
+
+![微信截图_20240120221502](./Readme_pic/微信截图_20240120221502.png)
+
+![微信截图_20240120221522](./Readme_pic/微信截图_20240120221522.png)
+
+无加载训练+验证：
+
+![微信截图_20240120221558](./Readme_pic/微信截图_20240120221558.png)
+
+加载训练+验证+评估：
+
+![微信截图_20240120221534](./Readme_pic/微信截图_20240120221534.png)
+
+### 权重文件：
+
+- [LJSpeech](https://keithito.com/LJ-Speech-Dataset/): a single-speaker English dataset consists of 13100 short audio clips of a female speaker reading passages from 7 non-fiction books, approximately 24 hours in total.You have to unzip the files in`talkingface-toolkit/dataset/LJSpeech/data"`
+-  MFA：Alignments of the supported datasets are provided [here](https://drive.google.com/drive/folders/1DBRkALpPd6FL9gjHMmMEdHODmkgNIIK4?usp=sharing). You have to unzip the files in `talkingface-toolkit/dataset/LJSpeech/preprocessed_data/TextGrid/`
 
