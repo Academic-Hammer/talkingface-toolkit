@@ -1,5 +1,11 @@
 # talkingface_FastSpeech2
 
+**由谭楚译：1120212796负责：**
+
+https://github.com/chuyi369
+
+https://github.com/chuyi369/talkingface-toolkit.git
+
 ### checkpoints:
 
 * HiFi-GAN.json: FastSpeech2 vocoder模型配置
