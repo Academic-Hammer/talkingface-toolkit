@@ -21,6 +21,7 @@ from talkingface.utils import (
     create_dataset
 )
 
+
 def run(
         model,
         dataset,
@@ -38,6 +39,7 @@ def run(
         evaluate_model_file=evaluate_model_file,
     )
     return res
+
 
 def run_talkingface(
         model=None,
@@ -70,17 +72,17 @@ def run_talkingface(
     logger.info(sys.argv)
     logger.info(config)
 
-    #data processing
+    # data processing
     # print(not (os.listdir(config['preprocessed_root'])))
     if config['need_preprocess'] and (not (os.path.exists(config['preprocessed_root'])) or not (os.listdir(config['preprocessed_root']))):
         get_preprocess(config['dataset'])(config).run()
 
     train_dataset, val_dataset = create_dataset(config)
     train_data_loader = data_utils.DataLoader(
-        train_dataset, batch_size=config["batch_size"], shuffle=True
+        train_dataset, batch_size=config["batch_size"], shuffle=True, collate_fn=train_dataset.collate_fn
     )
     val_data_loader = data_utils.DataLoader(
-        val_dataset, batch_size=config["batch_size"], shuffle=False
+        val_dataset, batch_size=config["batch_size"], shuffle=False, collate_fn=val_dataset.collate_fn
     )
 
     # load model
@@ -91,15 +93,12 @@ def run_talkingface(
 
     # model training
     if config['train']:
-        trainer.fit(train_data_loader, val_data_loader, saved=saved, show_progress=config["show_progress"])
+        trainer.fit(train_data_loader, val_data_loader, saved=saved,
+                    show_progress=config["show_progress"])
         # print(1)
 
     if not config['train'] and evaluate_model_file is None:
         print("error: no model file to evaluate without training")
         return
     # model evaluating
-    trainer.evaluate(model_file = evaluate_model_file)
-
-    
-
-
+    trainer.evaluate(model_file=evaluate_model_file)

@@ -14,27 +14,31 @@ from talkingface.data.dataset.dataset import Dataset
 
 from glob import glob
 
-import os, random, cv2, argparse
+import os
+import random
+import cv2
+import argparse
+
 
 class Wav2LipDataset(Dataset):
     def __init__(self, config, datasplit):
         super().__init__(config, datasplit)
-        self.all_videos = self.get_image_list(self.config['preprocessed_root'], datasplit)
+        self.all_videos = self.get_image_list(
+            self.config['preprocessed_root'], datasplit)
         self.audio_processor = Wav2LipAudio(self.config)
 
-    
     def get_image_list(self, data_root, split_path):
         filelist = []
 
         with open(split_path) as f:
             for line in f:
                 line = line.strip()
-                if ' ' in line: line = line.split()[0]
+                if ' ' in line:
+                    line = line.split()[0]
                 filelist.append(os.path.join(data_root, line))
 
         return filelist
 
-    
     def get_frame_id(self, frame):
         return int(basename(frame).split('.')[0])
 
@@ -51,14 +55,16 @@ class Wav2LipDataset(Dataset):
         return window_fnames
 
     def read_window(self, window_fnames):
-        if window_fnames is None: return None
+        if window_fnames is None:
+            return None
         window = []
         for fname in window_fnames:
             img = cv2.imread(fname)
             if img is None:
                 return None
             try:
-                img = cv2.resize(img, (self.config['img_size'], self.config['img_size']))
+                img = cv2.resize(
+                    img, (self.config['img_size'], self.config['img_size']))
             except Exception as e:
                 return None
 
@@ -70,18 +76,21 @@ class Wav2LipDataset(Dataset):
         if type(start_frame) == int:
             start_frame_num = start_frame
         else:
-            start_frame_num = self.get_frame_id(start_frame) # 0-indexing ---> 1-indexing
+            start_frame_num = self.get_frame_id(
+                start_frame)  # 0-indexing ---> 1-indexing
         start_idx = int(80. * (start_frame_num / float(self.config['fps'])))
-        
+
         end_idx = start_idx + self.config['syncnet_mel_step_size']
 
-        return spec[start_idx : end_idx, :]
+        return spec[start_idx: end_idx, :]
 
     def get_segmented_mels(self, spec, start_frame):
         mels = []
         assert self.config['syncnet_T'] == 5
-        start_frame_num = self.get_frame_id(start_frame) + 1 # 0-indexing ---> 1-indexing
-        if start_frame_num - 2 < 0: return None
+        start_frame_num = self.get_frame_id(
+            start_frame) + 1  # 0-indexing ---> 1-indexing
+        if start_frame_num - 2 < 0:
+            return None
         for i in range(start_frame_num, start_frame_num + self.config['syncnet_T']):
             m = self.crop_audio_window(spec, i - 2)
             if m.shape[0] != self.config['syncnet_mel_step_size']:
@@ -109,7 +118,7 @@ class Wav2LipDataset(Dataset):
             img_names = list(glob(join(vidname, '*.jpg')))
             if len(img_names) <= 3 * self.config['syncnet_T']:
                 continue
-            
+
             img_name = random.choice(img_names)
             wrong_img_name = random.choice(img_names)
             while wrong_img_name == img_name:
@@ -130,18 +139,20 @@ class Wav2LipDataset(Dataset):
 
             try:
                 wavpath = join(vidname, "audio.wav")
-                wav = self.audio_processor.load_wav(wavpath, self.config['sample_rate'])
+                wav = self.audio_processor.load_wav(
+                    wavpath, self.config['sample_rate'])
                 orig_mel = self.audio_processor.melspectrogram(wav).T
             except Exception as e:
                 continue
 
-            mel = self.crop_audio_window(orig_mel.copy(), img_name) 
+            mel = self.crop_audio_window(orig_mel.copy(), img_name)
 
             if (mel.shape[0] != self.config['syncnet_mel_step_size']):
                 continue
 
             indiv_mels = self.get_segmented_mels(orig_mel.copy(), img_name)
-            if indiv_mels is None: continue
+            if indiv_mels is None:
+                continue
 
             window = self.prepare_window(window)
             y = window.copy()
@@ -155,4 +166,4 @@ class Wav2LipDataset(Dataset):
             # breakpoint()
             indiv_mels = torch.FloatTensor(indiv_mels).unsqueeze(1)
             y = torch.FloatTensor(y)
-            return {"input_frames":x, "indiv_mels":indiv_mels, "mels":mel, "gt":y}
+            return {"input_frames": x, "indiv_mels": indiv_mels, "mels": mel, "gt": y}

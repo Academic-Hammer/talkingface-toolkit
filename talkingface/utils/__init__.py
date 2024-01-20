@@ -1,5 +1,8 @@
 from talkingface.utils.logger import init_logger, set_color
 from talkingface.utils.enum_type import *
+from talkingface.utils.text import *
+from talkingface.utils.audio import *
+from talkingface.utils.fastspeech2_transformerblock import Models, Layers, varianceadaptor,tools
 from talkingface.utils.utils import (
     get_local_time,
     ensure_dir,
@@ -35,6 +38,8 @@ __all__ = [
     "evaluation_arguments",
     "get_tensorboard",
     "set_color",
+    "text",
+    "audio",
     "get_gpu_usage",
     "get_flops",
     "get_environment",

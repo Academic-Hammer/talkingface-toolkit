@@ -5,11 +5,12 @@ import random
 import pandas as pd
 
 import numpy as np
-import torch 
+import torch
 import torch.nn as nn
 
 from torch.utils.tensorboard import SummaryWriter
 from texttable import Texttable
+
 
 def get_local_time():
     r"""Get current time
@@ -33,7 +34,8 @@ def ensure_dir(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-def get_model(model_name): 
+
+def get_model(model_name):
     r"""Automatically select model class based on model name
 
     Args:
@@ -48,23 +50,25 @@ def get_model(model_name):
         "nerf_based_talkingface",
         "text_to_speech",
         "voice_conversion"
-
     ]
 
     model_file_name = model_name.lower()
     model_module = None
     for submodule in model_submodule:
-        module_path = ".".join(["talkingface.model", submodule, model_file_name])
+        module_path = ".".join(
+            ["talkingface.model", submodule, model_file_name])
         if importlib.util.find_spec(module_path, __name__):
             model_module = importlib.import_module(module_path, __name__)
             break
 
     if model_module is None:
         raise ValueError(
-            "`model_name` [{}] is not the name of an existing model.".format(model_name)
+            "`model_name` [{}] is not the name of an existing model.".format(
+                model_name)
         )
     model_class = getattr(model_module, model_name)
     return model_class
+
 
 def get_trainer(model_name):
     r"""Automatically select trainer class based on model name
@@ -77,12 +81,14 @@ def get_trainer(model_name):
     """
     try:
         return getattr(
-            importlib.import_module("talkingface.trainer"), model_name + "Trainer"
+            importlib.import_module(
+                "talkingface.trainer"), model_name + "Trainer"
         )
     except AttributeError:
         raise AttributeError(
             "There is no trainer named `{}`".format(model_name)
         )
+
 
 def early_stopping(value, best, cur_step, max_step, bigger=False):
     r"""validation-based early stopping
@@ -143,6 +149,7 @@ def calculate_valid_score(valid_result, valid_netric=None):
     else:
         return valid_result[valid_netric]
 
+
 def dict2str(result_dict):
     r"""convert result dict to str
 
@@ -154,7 +161,8 @@ def dict2str(result_dict):
     """
 
     return "    ".join(
-        [str(metric) + " : " + str(value) for metric, value in result_dict.items()]
+        [str(metric) + " : " + str(value)
+         for metric, value in result_dict.items()]
     )
 
 
@@ -177,6 +185,7 @@ def init_seed(seed, reproducibility):
         torch.backends.cudnn.benchmark = True
         torch.backends.cudnn.deterministic = False
 
+
 def get_tensorboard(logger):
     r"""Creates a SummaryWriter of Tensorboard that can log PyTorch models and metrics into a directory for
     visualization within the TensorBoard UI.
@@ -194,7 +203,8 @@ def get_tensorboard(logger):
     dir_name = None
     for handler in logger.handlers:
         if hasattr(handler, "baseFilename"):
-            dir_name = os.path.basename(getattr(handler, "baseFilename")).split(".")[0]
+            dir_name = os.path.basename(
+                getattr(handler, "baseFilename")).split(".")[0]
             break
     if dir_name is None:
         dir_name = "{}-{}".format("model", get_local_time())
@@ -202,6 +212,7 @@ def get_tensorboard(logger):
     dir_path = os.path.join(base_path, dir_name)
     writer = SummaryWriter(dir_path)
     return writer
+
 
 def get_gpu_usage(device=None):
     r"""Return the reserved memory and total memory of given device in a string.
@@ -216,6 +227,7 @@ def get_gpu_usage(device=None):
     total = torch.cuda.get_device_properties(device).total_memory / 1024**3
 
     return "{:.2f} G/{:.2f} G".format(reserved, total)
+
 
 def get_flops(model, dataset, device, logger, transform, verbose=False):
     r"""Given a model and dataset to the model, compute the per-operator flops
@@ -285,11 +297,13 @@ def get_flops(model, dataset, device, logger, transform, verbose=False):
         if m_type in custom_ops:
             fn = custom_ops[m_type]
             if m_type not in types_collection and verbose:
-                logger.info("Customize rule %s() %s." % (fn.__qualname__, m_type))
+                logger.info("Customize rule %s() %s." %
+                            (fn.__qualname__, m_type))
         elif m_type in register_hooks:
             fn = register_hooks[m_type]
             if m_type not in types_collection and verbose:
-                logger.info("Register %s() for %s." % (fn.__qualname__, m_type))
+                logger.info("Register %s() for %s." %
+                            (fn.__qualname__, m_type))
         else:
             if m_type not in types_collection and verbose:
                 logger.warning(
@@ -346,6 +360,7 @@ def get_flops(model, dataset, device, logger, transform, verbose=False):
 
     return total_ops
 
+
 def list_to_latex(convert_list, bigger_flag=True, subset_columns=[]):
     result = {}
     for d in convert_list:
@@ -383,6 +398,7 @@ def list_to_latex(convert_list, bigger_flag=True, subset_columns=[]):
 
     return df, tex
 
+
 def get_environment(config):
     gpu_usage = (
         get_gpu_usage(config["device"])
@@ -416,6 +432,7 @@ def get_environment(config):
 
     return table
 
+
 def get_preprocess(dataset_name):
     r"""Automatically select dataset preprocess class based on dataset name
     """
@@ -426,9 +443,11 @@ def get_preprocess(dataset_name):
         preprocess_class = getattr(model_module, dataset_name+'Preprocess')
     except:
         raise ValueError(
-            "`dataset_name` [{}] is not the name of an existing dataset.".format(dataset_name)
-            )
+            "`dataset_name` [{}] is not the name of an existing dataset.".format(
+                dataset_name)
+        )
     return preprocess_class
+
 
 def create_dataset(config):
     r"""Automatically select dataset class based on dataset name
@@ -440,16 +459,9 @@ def create_dataset(config):
         dataset_module = importlib.import_module(module_path, __name__)
     if dataset_module is None:
         raise ValueError(
-            "`dataset_file_name` [{}] is not the name of an existing dataset.".format(dataset_file_name)
+            "`dataset_file_name` [{}] is not the name of an existing dataset.".format(
+                dataset_file_name)
         )
     dataset_class = getattr(dataset_module, model_name+'Dataset')
 
     return dataset_class(config, config['train_filelist']), dataset_class(config, config['val_filelist'])
-
-
-
-
-
-
-
-
