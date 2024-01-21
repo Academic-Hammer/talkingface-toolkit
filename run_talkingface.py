@@ -2,7 +2,7 @@
 Description: 
 Author: Fu Yuxuan
 Date: 2024-01-15 20:16:39
-LastEditTime: 2024-01-19 22:21:57
+LastEditTime: 2024-01-21 22:51:39
 '''
 from argparse import ArgumentParser, Namespace
 import torch
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser.add_argument("--model", "-m", type=str, default="Adaptive_VC", help="name of models")
     parser.add_argument("--dataset", type=str, default="VCTK", help="name of datasets")
     parser.add_argument('-config', '-c', default='./talkingface/properties/model/adaptive-VC.yaml')
-    parser.add_argument('-data_dir', '-d', default='./autodl-fs/preprocessed_data')
+    parser.add_argument('-data_dir', '-d', default='./dataset/preprocessed_data')
     parser.add_argument('-train_set', default='train_128')
     parser.add_argument('-train_index_file', default='train_samples_128.json')
     parser.add_argument('-logdir', default='./tf-logs/')

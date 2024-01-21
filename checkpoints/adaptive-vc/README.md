@@ -1,0 +1,1 @@
+You can download the pretrain model from [here](http://speech.ee.ntu.edu.tw/~jjery2243542/resource/model/is19/vctk_model.ckpt) and the coresponding normalization parameters for inference from [here](http://speech.ee.ntu.edu.tw/~jjery2243542/resource/model/is19/attr.pkl).
