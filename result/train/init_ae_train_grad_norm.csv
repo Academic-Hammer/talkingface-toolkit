@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AutoPanel</title>
+    <script>
+      var _hmt = _hmt || [];
+      (function() {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?2bad21c50f160413ff22e3b46fe3b2f0";
+        var s = document.getElementsByTagName("script")[0]; 
+        s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index.faab7cfa.js"></script>
+    <link rel="modulepreload" href="/assets/vendor.48dd236f.js">
+    <link rel="stylesheet" href="/assets/vendor.123d521b.css">
+    <link rel="stylesheet" href="/assets/index.bb818862.css">
+  </head>
+  <body>
+    <div id="app"></div>
+    
+  </body>
+</html>
