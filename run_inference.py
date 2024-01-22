@@ -1,3 +1,9 @@
+'''
+Description: 
+Author: Fu Yuxuan
+Date: 2024-01-19 22:22:13
+LastEditTime: 2024-01-22 10:35:00
+'''
 from argparse import ArgumentParser, Namespace
 import torch
 from talkingface.evaluator.evaluator import Evaluator
@@ -12,7 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('-model', '-m', default ='./saved/adaptive_vc/vctk_model.ckpt', help='model path')
     parser.add_argument('-source', '-s', default='./dataset/VCTK-Corpus/wav48/p231/p231_006.wav')
     parser.add_argument('-target', '-t', default='./dataset/VCTK-Corpus/wav48/p252/p253_032.wav')
-    parser.add_argument('-output', '-o', default='./result/evaluate/eval.wav')
+    parser.add_argument('-output', '-o', default='./result/inference/output.wav')
     parser.add_argument('-sample_rate', '-sr', help='sample rate', default=24000, type=int)
     args = parser.parse_args()
     # load config file 

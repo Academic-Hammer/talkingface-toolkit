@@ -123,4 +123,3 @@ AE(
   )
 )
 Load model from ./saved/adaptive_vc/vctk_model.ckpt
-wav result in result/evaluate/eval.wav
