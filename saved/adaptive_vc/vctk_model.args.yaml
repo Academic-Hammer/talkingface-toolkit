@@ -1,0 +1,15 @@
+config: ./talkingface/properties/model/adaptive-VC.yaml
+data_dir: ./autodl-fs/preprocessed_data
+dataset: VCTK
+iters: 20000
+load_model: false
+load_model_path: ./saved/adaptive_vc/vctk_model
+load_opt: false
+logdir: ./tf-logs/
+model: Adaptive_VC
+save_steps: 5000
+store_model_path: ./saved/adaptive_vc/vctk_model
+summary_steps: 500
+tag: init
+train_index_file: train_samples_128.json
+train_set: train_128

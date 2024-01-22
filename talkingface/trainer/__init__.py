@@ -1,1 +1,0 @@
-from talkingface.trainer.trainer import *

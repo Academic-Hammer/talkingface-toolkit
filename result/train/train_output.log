@@ -1,0 +1,136 @@
+{'SpeakerEncoder': {'c_in': 512, 'c_h': 128, 'c_out': 128, 'kernel_size': 5, 'bank_size': 8, 'bank_scale': 1, 'c_bank': 128, 'n_conv_blocks': 6, 'n_dense_blocks': 6, 'subsample': [1, 2, 1, 2, 1, 2], 'act': 'relu', 'dropout_rate': 0}, 'ContentEncoder': {'c_in': 512, 'c_h': 128, 'c_out': 128, 'kernel_size': 5, 'bank_size': 8, 'bank_scale': 1, 'c_bank': 128, 'n_conv_blocks': 6, 'subsample': [1, 2, 1, 2, 1, 2], 'act': 'relu', 'dropout_rate': 0}, 'Decoder': {'c_in': 128, 'c_cond': 128, 'c_h': 128, 'c_out': 512, 'kernel_size': 5, 'n_conv_blocks': 6, 'upsample': [2, 1, 2, 1, 2, 1], 'act': 'relu', 'sn': False, 'dropout_rate': 0}, 'data_loader': {'segment_size': 128, 'frame_size': 1, 'batch_size': 128, 'shuffle': True}, 'optimizer': {'lr': 0.0005, 'beta1': 0.9, 'beta2': 0.999, 'amsgrad': True, 'weight_decay': 0.0001, 'grad_norm': 5}, 'lambda': {'lambda_rec': 10, 'lambda_kl': 1}, 'annealing_iters': 20000}
+Namespace(config='./talkingface/properties/model/adaptive-VC.yaml', data_dir='./autodl-fs/preprocessed_data', dataset='VCTK', iters=20000, load_model=False, load_model_path='./saved/adaptive_vc/vctk_model', load_opt=False, logdir='./tf-logs/', model='Adaptive_VC', save_steps=5000, store_model_path='./saved/adaptive_vc/vctk_model', summary_steps=500, tag='init', train_index_file='train_samples_128.json', train_set='train_128')
+AE(
+  (speaker_encoder): SpeakerEncoder(
+    (act): ReLU()
+    (conv_bank): ModuleList(
+      (0): Conv1d(512, 128, kernel_size=(1,), stride=(1,))
+      (1): Conv1d(512, 128, kernel_size=(2,), stride=(1,))
+      (2): Conv1d(512, 128, kernel_size=(3,), stride=(1,))
+      (3): Conv1d(512, 128, kernel_size=(4,), stride=(1,))
+      (4): Conv1d(512, 128, kernel_size=(5,), stride=(1,))
+      (5): Conv1d(512, 128, kernel_size=(6,), stride=(1,))
+      (6): Conv1d(512, 128, kernel_size=(7,), stride=(1,))
+      (7): Conv1d(512, 128, kernel_size=(8,), stride=(1,))
+    )
+    (in_conv_layer): Conv1d(1536, 128, kernel_size=(1,), stride=(1,))
+    (first_conv_layers): ModuleList(
+      (0): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (1): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (2): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (3): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (4): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (5): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+    )
+    (second_conv_layers): ModuleList(
+      (0): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (1): Conv1d(128, 128, kernel_size=(5,), stride=(2,))
+      (2): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (3): Conv1d(128, 128, kernel_size=(5,), stride=(2,))
+      (4): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (5): Conv1d(128, 128, kernel_size=(5,), stride=(2,))
+    )
+    (pooling_layer): AdaptiveAvgPool1d(output_size=1)
+    (first_dense_layers): ModuleList(
+      (0): Linear(in_features=128, out_features=128, bias=True)
+      (1): Linear(in_features=128, out_features=128, bias=True)
+      (2): Linear(in_features=128, out_features=128, bias=True)
+      (3): Linear(in_features=128, out_features=128, bias=True)
+      (4): Linear(in_features=128, out_features=128, bias=True)
+      (5): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (second_dense_layers): ModuleList(
+      (0): Linear(in_features=128, out_features=128, bias=True)
+      (1): Linear(in_features=128, out_features=128, bias=True)
+      (2): Linear(in_features=128, out_features=128, bias=True)
+      (3): Linear(in_features=128, out_features=128, bias=True)
+      (4): Linear(in_features=128, out_features=128, bias=True)
+      (5): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (output_layer): Linear(in_features=128, out_features=128, bias=True)
+    (dropout_layer): Dropout(p=0)
+  )
+  (content_encoder): ContentEncoder(
+    (act): ReLU()
+    (conv_bank): ModuleList(
+      (0): Conv1d(512, 128, kernel_size=(1,), stride=(1,))
+      (1): Conv1d(512, 128, kernel_size=(2,), stride=(1,))
+      (2): Conv1d(512, 128, kernel_size=(3,), stride=(1,))
+      (3): Conv1d(512, 128, kernel_size=(4,), stride=(1,))
+      (4): Conv1d(512, 128, kernel_size=(5,), stride=(1,))
+      (5): Conv1d(512, 128, kernel_size=(6,), stride=(1,))
+      (6): Conv1d(512, 128, kernel_size=(7,), stride=(1,))
+      (7): Conv1d(512, 128, kernel_size=(8,), stride=(1,))
+    )
+    (in_conv_layer): Conv1d(1536, 128, kernel_size=(1,), stride=(1,))
+    (first_conv_layers): ModuleList(
+      (0): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (1): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (2): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (3): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (4): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (5): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+    )
+    (second_conv_layers): ModuleList(
+      (0): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (1): Conv1d(128, 128, kernel_size=(5,), stride=(2,))
+      (2): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (3): Conv1d(128, 128, kernel_size=(5,), stride=(2,))
+      (4): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (5): Conv1d(128, 128, kernel_size=(5,), stride=(2,))
+    )
+    (norm_layer): InstanceNorm1d(128, eps=1e-05, momentum=0.1, affine=False, track_running_stats=False)
+    (mean_layer): Conv1d(128, 128, kernel_size=(1,), stride=(1,))
+    (std_layer): Conv1d(128, 128, kernel_size=(1,), stride=(1,))
+    (dropout_layer): Dropout(p=0)
+  )
+  (decoder): Decoder(
+    (act): ReLU()
+    (in_conv_layer): Conv1d(128, 128, kernel_size=(1,), stride=(1,))
+    (first_conv_layers): ModuleList(
+      (0): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (1): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (2): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (3): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (4): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (5): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+    )
+    (second_conv_layers): ModuleList(
+      (0): Conv1d(128, 256, kernel_size=(5,), stride=(1,))
+      (1): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (2): Conv1d(128, 256, kernel_size=(5,), stride=(1,))
+      (3): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+      (4): Conv1d(128, 256, kernel_size=(5,), stride=(1,))
+      (5): Conv1d(128, 128, kernel_size=(5,), stride=(1,))
+    )
+    (norm_layer): InstanceNorm1d(128, eps=1e-05, momentum=0.1, affine=False, track_running_stats=False)
+    (conv_affine_layers): ModuleList(
+      (0): Linear(in_features=128, out_features=256, bias=True)
+      (1): Linear(in_features=128, out_features=256, bias=True)
+      (2): Linear(in_features=128, out_features=256, bias=True)
+      (3): Linear(in_features=128, out_features=256, bias=True)
+      (4): Linear(in_features=128, out_features=256, bias=True)
+      (5): Linear(in_features=128, out_features=256, bias=True)
+      (6): Linear(in_features=128, out_features=256, bias=True)
+      (7): Linear(in_features=128, out_features=256, bias=True)
+      (8): Linear(in_features=128, out_features=256, bias=True)
+      (9): Linear(in_features=128, out_features=256, bias=True)
+      (10): Linear(in_features=128, out_features=256, bias=True)
+      (11): Linear(in_features=128, out_features=256, bias=True)
+    )
+    (out_conv_layer): Conv1d(128, 512, kernel_size=(1,), stride=(1,))
+    (dropout_layer): Dropout(p=0)
+  )
+)
+Adam (
+Parameter Group 0
+    amsgrad: True
+    betas: (0.9, 0.999)
+    eps: 1e-08
+    lr: 0.0005
+    weight_decay: 0.0001
+)
+AE:[5000/20000], loss_rec=0.29, loss_kl=0.82, lambda=2.5e-01     
+AE:[10000/20000], loss_rec=0.29, loss_kl=0.58, lambda=5.0e-01     
+AE:[15000/20000], loss_rec=0.28, loss_kl=0.46, lambda=7.5e-01     
+AE:[20000/20000], loss_rec=0.29, loss_kl=0.38, lambda=1.0e+00  

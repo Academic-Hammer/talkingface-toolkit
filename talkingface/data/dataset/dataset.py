@@ -21,5 +21,4 @@ class Dataset(torch.utils.data.Dataset):
 
         """
 
-
         raise NotImplementedError

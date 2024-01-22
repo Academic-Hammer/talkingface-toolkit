@@ -1,41 +1,28 @@
-这个文件夹中保存的是数据集如：
-- lrw
-- lrs2
-- mead
-- .......
+实验使用的数据集是CSTR VCTK Corpus数据集，可以在下面的地址中下载获得。
+- [CSTR VCTK Corpus](https://homepages.inf.ed.ac.uk/jyamagis/page3/page58/page58.html)
 
-数据集处理的一般格式为：
+在dataset文件夹中，VCTK-Corpus存放的是在网站下载的原始数据，preprocessed_data存放的是经过预处理之后的数据。
 
+经过预处理后的dataset的架构如下：
+```xml
+dataset
+├── preprocessed_data *
+│   ├── attr.pkl
+│   ├── in_test_files.txt
+│   ├── in_test.pkl
+│   ├── in_test_samples_128.json
+│   ├── out_test_files.txt
+│   ├── out_test.pkl
+│   ├── out_test_samples_128.json
+│   ├── train_128.pkl
+│   ├── train.pkl
+│   └── train_samples_128.json
+├── VCTK-Corpus *
+│   ├── COPYING
+│   ├── NOTE
+│   ├── README
+│   ├── speaker-info.txt
+│   ├── txt *
+│   └── wav48 *
+└── (*符号代表该路径名为文件夹)
 ```
-dataset/
-
-├── lrs2
-
-| ├── data (存放数据集的原始数据)
-
-| ├── filelist (保存的是数据集划分)
-
-| │ ├── train.txt
-
-| │ ├── val.txt
-
-| │ ├── test.txt
-
-| ├── preprocessed_data (具体路径内容可以参考talkingface.utils.data_preprocess文件中处理lrs2时候的路径，主要存储的是视频抽帧后的图像文件和音频文件)
-```
-
-preprocessed_data的数据路径一般表示为：
-```
-preprocessed_root (lrs2_preprocessed)/
-
-├── list of folders
-
-| ├── Folders with five-digit numbered video IDs
-
-| │ ├── *.jpg
-
-| │ ├── audio.wav
-
-```
-
-数据集存储尽量按照这个格式来，数据集的划分也尽量按照train.txt val.txt和test.txt文件来
