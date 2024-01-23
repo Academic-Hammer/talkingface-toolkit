@@ -79,6 +79,8 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python ./trainer/DiffTalkTrainer.py --base 
 ## Test
 I have already incorporated the model into this framework. You can directly initialize the model from the top API.
 
+**I also write a small demo, see "demo.py" in this directory.** You need to copy it into the root and provide it data, then you can directly run it.
+
 ## Weakness
 1. The DiffTalk models talking head generation as an iterative denoising process, which needs more time to synthesize a frame compared with most GAN-based approaches. This is also a common problem of LDM-based works.
 2. The model is trained on the HDTF dataset, and it sometimes fails on some identities from other datasets.
