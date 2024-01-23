@@ -11,7 +11,6 @@ import cv2
 
 from talkingface.model.layers import Conv2d, Conv2dTranspose, nonorm_Conv2d
 from talkingface.model.abstract_talkingface import AbstractTalkingFace
-from talkingface.data.dataprocess.wav2lip_process import Wav2LipPreprocessForInference, Wav2LipAudio
 from talkingface.utils import ensure_dir
 
 class SyncNet_color(nn.Module):
