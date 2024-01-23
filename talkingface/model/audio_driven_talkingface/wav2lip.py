@@ -9,9 +9,9 @@ import os, subprocess
 from glob import glob
 import cv2
 
+from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio, Wav2LipPreprocessForInference
 from talkingface.model.layers import Conv2d, Conv2dTranspose, nonorm_Conv2d
 from talkingface.model.abstract_talkingface import AbstractTalkingFace
-from talkingface.data.dataprocess.wav2lip_process import Wav2LipPreprocessForInference, Wav2LipAudio
 from talkingface.utils import ensure_dir
 
 class SyncNet_color(nn.Module):
@@ -263,14 +263,15 @@ class Wav2Lip(AbstractTalkingFace):
 
         with open(self.config['test_filelist'], 'r') as filelist:
             lines = filelist.readlines()
-
+            print("lines:", lines)
         file_dict = {'generated_video': [], 'real_video': []}
         for idx, line in enumerate(tqdm(lines, desc='generate video')):
             file_src = line.split()[0]
-
+            print("file_src:", file_src)
             audio_src = os.path.join(self.config['data_root'], file_src) + '.mp4'
             video = os.path.join(self.config['data_root'], file_src) + '.mp4'
-
+            print("audio_src:", audio_src)
+            print("vedio:", video)
 
             ensure_dir(os.path.join(self.config['temp_dir']))
 

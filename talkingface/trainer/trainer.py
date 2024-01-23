@@ -2,7 +2,6 @@ import os
 
 from logging import getLogger
 from time import time
-import dlib, json, subprocess
 import torch.nn.functional as F
 import glob
 import numpy as np
@@ -25,7 +24,6 @@ from talkingface.utils import(
     get_gpu_usage,
     WandbLogger
 )
-from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
 from talkingface.evaluator import Evaluator
 
 
