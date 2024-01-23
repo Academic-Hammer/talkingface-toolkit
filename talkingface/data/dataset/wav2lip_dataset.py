@@ -19,13 +19,18 @@ class Wav2LipDataset(Dataset):
         self.audio_processor = Wav2LipAudio(self.config)
 
     def get_image_list(self, data_root, split_path):
+        if split_path is None:
+            raise ValueError("split_path is None. Please provide a valid path.")
+
+        if not os.path.exists(split_path):
+            raise FileNotFoundError(f"The specified path does not exist: {split_path}")
+
         filelist = []
-        print("split path:")
-        print(split_path)
         with open(split_path) as f:
             for line in f:
                 line = line.strip()
-                if ' ' in line: line = line.split()[0]
+                if ' ' in line:
+                    line = line.split()[0]
                 filelist.append(os.path.join(data_root, line))
 
         return filelist

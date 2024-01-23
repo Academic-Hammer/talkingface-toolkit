@@ -8,6 +8,8 @@ import numpy as np
 import os, subprocess
 from glob import glob
 import cv2
+from ...data.dataprocess.wav2lip_process import *
+
 
 from talkingface.model.layers import Conv2d, Conv2dTranspose, nonorm_Conv2d
 from talkingface.model.abstract_talkingface import AbstractTalkingFace
