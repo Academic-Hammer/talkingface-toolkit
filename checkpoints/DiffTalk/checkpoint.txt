@@ -1,0 +1,6 @@
+Obviously its impossible to push the checkpoint to github.
+
+Please download the checkpoint from here: https://cloud.tsinghua.edu.cn/f/7eb11fc208144ed0ad20/?dl=1
+
+Please do not modify the checkpoint name. Keep it as "model.ckpt".
+
