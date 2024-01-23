@@ -13,7 +13,7 @@ from scipy.interpolate import interp2d
 from scipy.linalg import orth
 import albumentations
 
-import ldm.modules.image_degradation.utils_image as util
+from  ...modules.image_degradation import utils_image as util
 
 
 def modcrop_np(img, sf):

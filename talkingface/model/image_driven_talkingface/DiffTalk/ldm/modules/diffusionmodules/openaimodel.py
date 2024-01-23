@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import pdb
 
 
-from ldm.modules.diffusionmodules.util import (
+from ...modules.diffusionmodules.util import (
     checkpoint,
     conv_nd,
     linear,
@@ -19,7 +19,7 @@ from ldm.modules.diffusionmodules.util import (
     normalization,
     timestep_embedding,
 )
-from ldm.modules.attention import SpatialTransformer
+from ...modules.attention import SpatialTransformer
 
 
 # dummy replace

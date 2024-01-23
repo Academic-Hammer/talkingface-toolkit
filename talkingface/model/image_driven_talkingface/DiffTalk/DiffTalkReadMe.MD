@@ -1,5 +1,6 @@
 # DiffTalk #
 The pytorch implementation for "DiffTalk: Crafting Diffusion Models for Generalized Audio-Driven Portraits Animation".
+Incorporated in this framework by Huanran Chen.
 
 ## Extra requirements for training and inference
 training:
@@ -8,7 +9,7 @@ training:
 testing:
 - configargparse
 - Omegaconf
-- 
+- taming-transformers. https://blog.csdn.net/qq_45560230/article/details/134936234. Need to replace one file after installation.
 For more details, please refer to the `requirements.txt`. 
 
 Requires 8 NVIDIA 3090Ti GPUs.
@@ -87,8 +88,17 @@ lip shape information.
 
 ## Pictures
 For training, it requires 8 GPUs to train. We are impossible to train this, but we implement the trainer, and you can use our code to train it.
-For testing, we its very easy to initialize the model.
+For testing, its very easy to initialize the model:
+write some thing at the root of this project, just:
+```python
+from talkingface.model.image_driven_talkingface.DiffTalk import get_difftalk_inference
 
+model = get_difftalk_inference()
+
+print(model)
+```
+Or just Call the API. You can see the loaded model:
+![img.png](img.png)
 
 ## Acknowledgement
 This code is built on https://github.com/sstzal/DiffTalk
