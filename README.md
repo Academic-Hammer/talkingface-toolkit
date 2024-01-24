@@ -8,7 +8,9 @@
 
 验证截图：![验证截图](.\验证截图.png)
 
-验证说明：如果需要验证其他音频或其他说话人，请修改talkingface/properties/model处的live_speech_portraits.yaml，除model_params处的APC的ckp_path无需修改外，其他路径请都修改为你所需要指定的音频和说话人，这些数据均存放在checkpoints/live_speech_portraits内
+验证说明：如果需要验证其他音频或其他说话人，请修改talkingface/properties/model处的live_speech_portraits.yaml，除model_params处的APC的ckp_path无需修改外，其他路径请都修改为你所需要指定的音频和说话人。
+
+注意：验证所需的模型和数据请从此处[data - Google 云端硬盘](https://drive.google.com/drive/folders/1sHc2xEEGwnb0h2rkUhG9sPmOxvRvPVpJ)下载，并且放在checkpoints/live_speech_portraits目录下。
 
 所使用的依赖：
 
