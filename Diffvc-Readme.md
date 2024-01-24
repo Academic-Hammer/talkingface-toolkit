@@ -48,7 +48,7 @@ VCTK：https://drive.google.com/file/d/12s9RPmwp9suleMkBCVetD8pub7wsDAy4/view?us
 
 数据处理部分：
 
-①首先建立一个数据集文件夹data，包含“wavs”、“mels”和“embeds”三个文件夹，并将原数据集上的wav文件按照原文件夹放入wav文件中，在filelist中加入训练数据名称
+①首先建立一个数据集文件夹data，包含“wavs”、“mels”、“filelist”和“embeds”四个文件夹，并将原数据集上的wav文件按照原文件夹放入wav文件中，在filelist中加入训练数据名称valid.txt exceptions_libritts.txt
 
 （以下涉及到的代码块在talkingface/data/dataprocess/下
 
