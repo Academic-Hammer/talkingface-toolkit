@@ -8,6 +8,9 @@ from .HyperLips_utils.mobilenetv3 import MobileNetV3LargeEncoder
 from .HyperLips_utils.resnet import ResNet50Encoder
 from .HyperLips_utils.lraspp import LRASPP
 
+from torchvision.models.vgg import vgg19
+import lpips
+
 from .HyperLips_utils import layers
 from .HyperLips_utils.hypernetwork import HyperNetwork
 from .hyperlipsbase import HyperLipsBase
@@ -18,7 +21,8 @@ from talkingface.model.abstract_talkingface import AbstractTalkingFace
 
 
 class HyperLipsHR(AbstractTalkingFace):
-    def __init__(self, window_T, rescaling=1, base_model_checkpoint="", HRDecoder_model_checkpoint=""):
+    # TODO:__init__可能需要改动，现在的config不清楚是否可以正常传入，后续的参数也不清楚
+    def __init__(self, config, window_T, rescaling=1, base_model_checkpoint="", HRDecoder_model_checkpoint=""):
         super().__init__()
         self.base_size = 128
         self.rescaling = rescaling
@@ -42,6 +46,13 @@ class HyperLipsHR(AbstractTalkingFace):
         self.HRDecoder.eval()
         for param in self.HRDecoder.parameters():
             param.requires_grad = False
+
+        # TODO:此处的config中的内容本质来源于HyperLips.yaml 记得再次核对所有的相应内容
+        self.config = config
+        self.l1loss = nn.L1Loss()
+        self.bceloss = nn.BCELoss()
+
+        self.disc = HRDecoder_disc_qual().to(self.config['device'])  # 判别器的实例化
 
     def forward(self,
                 audio_sequences: Tensor,
@@ -100,19 +111,80 @@ class HyperLipsHR(AbstractTalkingFace):
         Returns:
             torch.Tensor: Training loss, shape: []
         """
-        indiv_mels = interaction['indiv_mels'].to(self.config['device'])
-        input_frames = interaction['input_frames'].to(self.config['device'])
-        mel = interaction['mels'].to(self.config['device'])
-        gt = interaction['gt'].to(self.config['device'])
-        g_frames = self.forward(indiv_mels, input_frames)
-        l1loss = self.l1loss(g_frames, gt)
-        if self.config['syncnet_wt'] > 0 or valid:
-            sync_loss = self.syncnet_loss(mel, g_frames)
-        else:
-            sync_loss = 0
+        adversarial_criterion = nn.BCEWithLogitsLoss().to(self.config['device'])
+        content_criterion = nn.L1Loss().to(self.config['device'])
+        perception_criterion = PerceptualLoss().to(self.config['device'])
 
-        loss = self.config['syncnet_wt'] * sync_loss + (1 - self.config['syncnet_wt']) * l1loss
-        return {"loss": loss, "l1loss": l1loss, "sync_loss": sync_loss}
+        # TODO:此处的是否可以从interaction中获取到hyper_img等数据与数据加载器高度相关联，因此也和dataset高度相关联，后续应该确认
+        hyper_img = interaction['hyper_img'].to(self.config['device'])
+        hyper_sketch = interaction['hyper_sketch'].to(self.config['device'])
+        gt_mask = interaction['gt_mask'].to(self.config['device'])
+        gt_sketch = interaction['gt_sketch'].to(self.config['device'])
+        gt_img = interaction['gt_img'].to(self.config['device'])
+        B = interaction['hyper_img'].size(0)
+        coords=interaction['coords']
+
+        input_dim_size = len(hyper_img.size())
+        if input_dim_size > 4:
+            hyper_img = torch.cat([hyper_img[:, :, i] for i in range(hyper_img.size(2))],
+                                  dim=0)  # ([2, 6, 5, 512, 512])->([10, 6, 512, 512])
+            hyper_sketch = torch.cat([hyper_sketch[:, :, i] for i in range(hyper_sketch.size(2))], dim=0)
+            gt_mask = torch.cat([gt_mask[:, :, i] for i in range(gt_mask.size(2))], dim=0)
+            gt_sketch = torch.cat([gt_sketch[:, :, i] for i in range(gt_sketch.size(2))], dim=0)
+            gt_img = torch.cat([gt_img[:, :, i] for i in range(gt_img.size(2))], dim=0)
+            coords_t = torch.cat([(coords)[:, i] for i in range(coords.size(1))], dim=0)
+        real_labels = torch.ones((gt_img.size()[0], 1)).to(self.config['device'])  # [4,1]
+        fake_labels = torch.zeros((gt_img.size()[0], 1)).to(self.config['device'])  # [4,1]
+
+        input_temp = torch.cat((hyper_img, hyper_sketch), dim=1)  # ([2, 5, 1, 80, 16])->([10, 1, 80, 16])
+
+        # TODO:args.img_size需要适应当前文件,具体修改方法可以参见相关记录
+        if args.img_size == 512:
+            rescaling = 4
+        elif args.img_size == 256:
+
+            rescaling = 2
+        else:
+            rescaling = 1
+
+        model = HRDecoder(rescaling)
+        model = model.to(self.config['device'])
+        g = model(input_temp)
+
+        # 计算lip_lpips_loss和lip_recons_loss_temp
+        # TODO:需要引用lpips.py
+        loss_fn_vgg = lpips.LPIPS(net='vgg').cuda()
+
+        lip_lpips_loss = 0
+        lip_recons_loss_temp = 0
+        for i in range(gt_img.shape[0]):
+            x_min, x_max, y_min, y_max = int(coords_t[i, 0]), int(coords_t[i, 1]), int(coords_t[i, 2]), int(
+                coords_t[i, 3])
+            gt_t_i = gt_img[i, :, x_min:x_max, y_min:y_max]
+            g_t_i = g[i, :, x_min:x_max, y_min:y_max]
+            recons_loss_temp_i = self.l1loss(g_t_i, gt_t_i)
+            lip_recons_loss_temp = lip_recons_loss_temp + recons_loss_temp_i
+
+            lpips_loss_i = loss_fn_vgg(g_t_i, gt_t_i)
+            lip_lpips_loss = lip_lpips_loss + lpips_loss_i
+        lip_lpips_loss = lip_lpips_loss / gt_img.shape[0]
+        lip_recons_loss_temp = lip_recons_loss_temp / gt_img.shape[0]
+
+        score_real = self.disc(gt_img)  # [4,1]
+        score_fake = self.disc(g)  # [4,1]
+        discriminator_rf = score_real - score_fake.mean()
+        discriminator_fr = score_fake - score_real.mean()
+
+        adversarial_loss_rf = adversarial_criterion(discriminator_rf, fake_labels)
+        adversarial_loss_fr = adversarial_criterion(discriminator_fr, real_labels)
+        adversarial_loss = (adversarial_loss_fr + adversarial_loss_rf) / 2
+
+        perceptual_loss = perception_criterion(gt_img, g)
+        content_loss = content_criterion(g, gt_img)
+
+        loss = adversarial_loss + perceptual_loss + content_loss + lip_lpips_loss + lip_recons_loss_temp
+
+        return {"loss": loss, "adversarial_loss": adversarial_loss, "perceptual_loss": perceptual_loss, "content_loss":content_loss , "lip_lpips_loss": lip_lpips_loss , "lip_recons_loss_temp":lip_recons_loss_temp }
 
     def syncnet_loss(self, mel, g_frames):
         syncnet = self.load_syncnet()
@@ -130,12 +202,25 @@ class HyperLipsHR(AbstractTalkingFace):
 
         return loss
 
-    # TODO: 讨论是否需要完成该函数
+    # TODO: 完成该函数
     def generate_batch(self):
         file_dict = {}
         return file_dict
 
+class PerceptualLoss(nn.Module):
+    def __init__(self):
+        super(PerceptualLoss, self).__init__()
 
+        vgg = vgg19(pretrained=True)
+        loss_network = nn.Sequential(*list(vgg.features)[:35]).eval()
+        for param in loss_network.parameters():
+            param.requires_grad = False
+        self.loss_network = loss_network
+        self.l1_loss = nn.L1Loss()
+
+    def forward(self, high_resolution, fake_high_resolution):
+        perception_loss = self.l1_loss(self.loss_network(high_resolution), self.loss_network(fake_high_resolution))
+        return perception_loss
 
 class HRDecoder(nn.Module):
     def __init__(self, rescaling=1):
