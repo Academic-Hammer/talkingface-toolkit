@@ -919,7 +919,6 @@ class InitialReconstruction(BaseModule):
         #istft = torchaudio.functional.istft(stft, n_fft=self.n_fft,
                            #hop_length=self.hop_size, win_length=self.n_fft, 
                           # window=self.window, center=True)
-        print("0stft.shape:", stft_complex.shape)
         istft = torch.istft(stft_complex, n_fft=self.n_fft, hop_length=self.hop_size, win_length=self.n_fft, 
                            window=self.window,center=True )
         return istft.unsqueeze(1)
@@ -960,8 +959,6 @@ class FastGL(BaseModule):
             #angles = s / stftm.unsqueeze(-1)
             angles = s / stftm_complex
             angles=angles.unsqueeze(-1)
-            print("1s.shape:", s.shape)
-            print("c.shape:", c.shape)
             print("prev_angles.shape:", prev_angles.shape)
             s = c * (angles + self.momentum * (angles - prev_angles))
            # real_part = torch.ones_like(s, device=stftm.device)
@@ -972,7 +969,6 @@ class FastGL(BaseModule):
                                             #center=True)
            # print("2s.shape:", s_complex.shape)
             s = s.squeeze(-1)  
-            print("3s.shape:", s.shape)
             x = torch.istft(s, n_fft=self.n_fft, hop_length=self.hop_size, 
                                             win_length=self.n_fft, window=self.window, 
                                             center=True)
