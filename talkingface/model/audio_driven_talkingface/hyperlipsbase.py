@@ -82,7 +82,7 @@ class SyncNet_color(nn.Module):
 
 
 class HyperLipsBase(AbstractTalkingFace):
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
         self.up_conv = nn.Sequential(
             # Conv2dTranspose(16*4, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
@@ -99,6 +99,14 @@ class HyperLipsBase(AbstractTalkingFace):
 
         self.hyper_control_net = HyperFCNet(hnet_hdim=64, residual=True, use_batchnorm=True)
         self.decoder = RecurrentDecoder([16, 24, 40, 128], [80, 40, 32, 16 * 4])
+
+        # TODO:此处的config中的内容本质来源于HyperLips.yaml 记得再次核对所有的相应内容
+        self.config = config
+        self.l1loss = nn.L1Loss()
+        self.bceloss = nn.BCELoss()
+
+        self.disc = HyperCtrolDiscriminator().to(self.config['device'])  # 判别器的实例化
+
 
     def forward(self, audio_sequences: Tensor, face_sequences: Tensor):
         B = audio_sequences.size(0)
@@ -152,19 +160,30 @@ class HyperLipsBase(AbstractTalkingFace):
         Returns:
             torch.Tensor: Training loss, shape: []
         """
+        # TODO:此处的是否可以从interaction中获取到hyper_img等数据与数据加载器高度相关联，因此也和dataset高度相关联，后续应该确认
         indiv_mels = interaction['indiv_mels'].to(self.config['device'])
         input_frames = interaction['input_frames'].to(self.config['device'])
         mel = interaction['mels'].to(self.config['device'])
         gt = interaction['gt'].to(self.config['device'])
         g_frames = self.forward(indiv_mels, input_frames)
+
         l1loss = self.l1loss(g_frames, gt)
+
         if self.config['syncnet_wt'] > 0 or valid:
             sync_loss = self.syncnet_loss(mel, g_frames)
         else:
             sync_loss = 0
 
+        if self.config['disc_wt'] > 0 or valid:
+            perceptual_loss = self.disc.perceptual_forward(g_frames)
+        else:
+            perceptual_loss = 0
+
+        # TODO:核对yaml是否给出syncet_wt和disc_wt，应该对应于train_hyperlipsBase中训练函数中的那一部分
+        loss = self.config['syncnet_wt'] * sync_loss + self.config['disc_wt'] * perceptual_loss + \
+               (1 - self.config['syncnet_wt'] - self.config['disc_wt']) * l1loss
         loss = self.config['syncnet_wt'] * sync_loss + (1 - self.config['syncnet_wt']) * l1loss
-        return {"loss": loss, "l1loss": l1loss, "sync_loss": sync_loss}
+        return {"loss": loss, "l1loss": l1loss, "sync_loss": sync_loss, "perceptual_loss": perceptual_loss }
 
     def syncnet_loss(self, mel, g_frames):
         syncnet = self.load_syncnet()
@@ -182,82 +201,8 @@ class HyperLipsBase(AbstractTalkingFace):
 
         return loss
 
-    # TODO: 讨论是否需要完成该函数
+    # TODO: 完成该函数
     def generate_batch(self):
-        def generate_batch(self):
-            # 假设self.config是一个包含必要配置的字典，如视频路径等
-            videos = self.config['test_filelist']  # 视频文件列表路径
-            output_dir = self.config['output_dir']  # 输出目录
-
-            # 确保输出目录存在
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
-
-            # 加载模型和必要的处理器
-            self._load_models_and_processors()
-
-            # 存储生成视频和真实视频的路径
-            file_dict = {'generated_video': [], 'real_video': []}
-
-            # 遍历视频文件列表，并处理每个视频
-            with open(videos, 'r') as filelist:
-                for line in filelist:
-                    video_path = line.strip()
-                    if not video_path:
-                        continue
-
-                    generated_video_path, real_video_path = self._process_video(video_path, output_dir)
-
-                    # 将生成和真实视频的路径添加到字典中
-                    file_dict['generated_video'].append(generated_video_path)
-                    file_dict['real_video'].append(real_video_path)
-
-            return file_dict
-
-        def _load_models_and_processors(self):
-            # 确保配置中包含所有必要的路径和设置
-            required_configs = ['checkpoint_path_base', 'segmentation_path', 'device']
-            for config in required_configs:
-                if config not in self.config:
-                    raise ValueError(f"Configuration '{config}' is required in self.config")
-
-            # 设置设备
-            self.device = torch.device(self.config['device'])
-
-            # 加载 HyperLipsBase 模型
-            self.model = self._load_hyperlipsbase(self.config['checkpoint_path_base'])
-
-            # 加载面部分割网络（如果需要的话）
-            self.seg_net = self._load_face_segmentation(self.config['segmentation_path'])
-
-            # 创建面部检测器
-            self.face_detector = face_detection.FaceAlignment(face_detection.LandmarksType._2D, flip_input=False,
-                                                              device=self.device)
-
-            print('Models and processors loaded successfully.')
-
-        def _load_hyperlipsbase(self, checkpoint_path):
-            model = HyperLipsBase()
-            checkpoint = torch.load(checkpoint_path, map_location=self.device)
-            model.load_state_dict(checkpoint['state_dict'])
-            return model.to(self.device)
-
-        def _load_face_segmentation(self, checkpoint_path):
-            # 加载面部分割模型的代码（根据实际情况填写）
-            # 这里需要你根据具体的模型和方法进行相应的实现
-            pass
-
-        def _process_video(self, video_path, output_dir):
-            # 处理单个视频的逻辑，类似于代码二中的 _HyperlipsInference 方法
-            # 返回生成的视频路径和原始视频路径
-            # 这里需要根据代码二的逻辑进行适当修改和调整
-            generated_video_path = os.path.join(output_dir, os.path.basename(video_path))
-            real_video_path = video_path
-
-            # 处理视频并生成结果，这里需要根据代码二的逻辑进行适当修改和调整
-            # ...
-
-            return generated_video_path, real_video_path
         file_dict = {}
         return file_dict
 
