@@ -3,7 +3,11 @@ import os
 import sys
 import yaml
 from logging import getLogger
-from typing import Literal
+#from typing import Literal
+from typing_extensions import Literal
+
+
+
 
 from talkingface.utils import(
     get_model,
@@ -203,7 +207,6 @@ class Config(object):
                 )
         else:
             final_dataset = dataset
-
         return final_model, final_model_class, final_dataset
     
     def _update_internal_config_dict(self, file):

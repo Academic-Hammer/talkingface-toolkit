@@ -13,6 +13,33 @@ from tqdm import tqdm
 import torch.cuda.amp as amp
 from torch import nn
 from pathlib import Path
+#train   talkingface.data.dataset.data_objects     talkingface.utils.voice_conversion_talkingface
+from talkingface.data.dataset.data_objects import SpeakerVerificationDataLoader, SpeakerVerificationDataset
+from talkingface.utils.voice_conversion_talkingface.params_model import *
+from talkingface.model.voice_conversion.diffvc import SpeakerEncoder
+from talkingface.utils.voice_conversion_talkingface.DiffVC_speaker_encoder_utils import Profiler as Profiler
+from pathlib import Path
+
+from torch.utils.data import DataLoader
+
+from talkingface.data.dataset.diffvc_dataset import diffvcDataset, VCDecBatchCollate,VCDecDataset
+from talkingface.model.voice_conversion.diffvc import diffvc
+from talkingface.model.voice_conversion.diffvc import FastGL
+from talkingface.utils.utils import save_plot, save_audio
+
+#visualization
+from talkingface.data.dataset.data_objects.speaker_verification_dataset import SpeakerVerificationDataset
+from datetime import datetime
+from time import perf_counter as timer
+import matplotlib.pyplot as plt
+import numpy as np
+import talkingface.properties.model.params as params
+
+from talkingface.model.voice_conversion.diffvc import diffvc
+import webbrowser
+import visdom
+import umap
+
 
 from talkingface.utils import(
     ensure_dir,
@@ -27,6 +54,8 @@ from talkingface.utils import(
 )
 from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
 from talkingface.evaluator import Evaluator
+
+
 
 
 class AbstractTrainer(object):
@@ -446,6 +475,410 @@ class Trainer(AbstractTrainer):
         eval_result = self.evaluator.evaluate(datadict)
         self.logger.info(eval_result)
 
+class diffvcTrainer(Trainer):
+    def __init__(self, config, model):
+        super(diffvcTrainer, self).__init__(config, model)
+        self.optimizer = config["optimizer"]
+        self.train_loader = config["train_loader"]
+        self.epochs = config["epochs"]
+        self.batch_size = config["batch_size"]
+        self.learning_rate = config["learning_rate"]
+        self.save_every = config["save_every"]
+        self.log_dir = config["log_dir"]
+        torch.manual_seed(config["random_seed"])
+        np.random.seed(config["random_seed"])
+        n_mels = params.n_mels
+        sampling_rate = params.sampling_rate
+        n_fft = params.n_fft
+        hop_size = params.hop_size
+
+        random_seed = params.seed
+        test_size = params.test_size
+
+        data_dir=params.data_dir
+        val_file=params.val_file
+        exc_file=params.exc_file
+
+        log_dir = 'logs_dec'
+        enc_dir = 'logs_enc'
+        epochs = 10
+        batch_size = 32
+        learning_rate = 1e-4
+        save_every = 1
+
+
+     
+
+        torch.manual_seed(random_seed)
+        np.random.seed(random_seed)
+
+        os.makedirs(log_dir, exist_ok=True)
+
+        print('Initializing data loaders...')
+        train_set = VCDecDataset(data_dir, val_file, exc_file)
+        collate_fn = VCDecBatchCollate()
+        train_loader = DataLoader(train_set, batch_size=batch_size, 
+                                    collate_fn=collate_fn, num_workers=4, drop_last=True)
+
+        print('Initializing and loading models...')
+        #fgl = FastGL(n_mels, sampling_rate, n_fft, hop_size).cuda()
+        fgl = FastGL(n_mels, sampling_rate, n_fft, hop_size)
+            
+            #.cuda()
+        model.load_encoder(os.path.join(enc_dir, 'enc.pt'))
+
+        print('Encoder:')
+        print(model.encoder)
+       # print('Number of parameters = %.2fm\n' % (model.encoder.nparams/1e6))
+        print('Decoder:')
+        print(model.decoder)
+       # print('Number of parameters = %.2fm\n' % (model.decoder.nparams/1e6))
+
+        print('Initializing optimizers...')
+        optimizer = torch.optim.Adam(params=model.decoder.parameters(), lr=learning_rate)
+
+        print('Start training.')
+        torch.backends.cudnn.benchmark = True
+        iteration = 0
+        for epoch in range(1, epochs + 1):
+            print(f'Epoch: {epoch} [iteration: {iteration}]')
+            model.train()
+            losses = []
+            for batch in tqdm(train_loader, total=len(train_set)//batch_size):
+                    mel, mel_ref = batch['mel1'].cuda(), batch['mel2'].cuda()
+                    c, mel_lengths = batch['c'].cuda(), batch['mel_lengths'].cuda()
+                    model.zero_grad()
+                    loss = model.compute_loss(mel, mel_lengths, mel_ref, c)
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(model.decoder.parameters(), max_norm=1)
+                    optimizer.step()
+                    losses.append(loss.item())
+                    iteration += 1
+
+            losses = np.asarray(losses)
+            msg = 'Epoch %d: loss = %.4f\n' % (epoch, np.mean(losses))
+            print(msg)
+            with open(f'{log_dir}/train_dec.log', 'a') as f:
+                    f.write(msg)
+            losses = []
+
+            if epoch % save_every > 0:
+                continue
+
+            model.eval()
+            print('Inference...\n')
+            with torch.no_grad():
+                mels = train_set.get_valid_dataset()
+                for i, (mel, c) in enumerate(mels):
+                    if i >= test_size:
+                            break
+                    mel = mel.unsqueeze(0).float().cuda()
+                    c = c.unsqueeze(0).float().cuda()
+                    mel_lengths = torch.LongTensor([mel.shape[-1]]).cuda()
+                    mel_avg, mel_rec = model(mel, mel_lengths, mel, mel_lengths, c, 
+                                                n_timesteps=100)
+                    if epoch == save_every:
+                            save_plot(mel.squeeze().cpu(), f'{log_dir}/original_{i}.png')
+                            audio = fgl(mel)
+                            save_audio(f'{log_dir}/original_{i}.wav', sampling_rate, audio)
+                    save_plot(mel_avg.squeeze().cpu(), f'{log_dir}/average_{i}.png')
+                    audio = fgl(mel_avg)
+                    save_audio(f'{log_dir}/average_{i}.wav', sampling_rate, audio)
+                    save_plot(mel_rec.squeeze().cpu(), f'{log_dir}/reconstructed_{i}.png')
+                    audio = fgl(mel_rec)
+                    save_audio(f'{log_dir}/reconstructed_{i}.wav', sampling_rate, audio)
+
+            print('Saving model...\n')
+            ckpt = model.state_dict()
+            torch.save(ckpt, f=f"{log_dir}/vc_{epoch}.pt")                      
+
+
+class diffVC_encoder_train:
+    def sync(device: torch.device):
+        # FIXME
+        return
+        # For correct profiling (cuda operations are async)
+        if device.type == "cuda":
+            torch.cuda.synchronize(device)
+
+    def train(run_id: str, clean_data_root: Path, models_dir: Path, umap_every: int, save_every: int,
+              backup_every: int, vis_every: int, force_restart: bool, visdom_server: str,
+              no_visdom: bool):
+        # Create a dataset and a dataloader
+        dataset = SpeakerVerificationDataset(clean_data_root)
+        loader = SpeakerVerificationDataLoader(
+            dataset,
+            diffVC_encoder_train.speakers_per_batch,
+            diffVC_encoder_train.utterances_per_speaker,
+            num_workers=8,
+        )
+
+        # Setup the device on which to run the forward pass and the loss. These can be different,
+        # because the forward pass is faster on the GPU whereas the loss is often (depending on your
+        # hyperparameters) faster on the CPU.
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # FIXME: currently, the gradient is None if loss_device is cuda
+        loss_device = torch.device("cpu")
+
+        # Create the model and the optimizer
+        model = SpeakerEncoder(device, loss_device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=diffVC_encoder_train.learning_rate_init)
+        init_step = 1
+
+        # Configure file path for the model
+        state_fpath = models_dir.joinpath(run_id + ".pt")
+        backup_dir = models_dir.joinpath(run_id + "_backups")
+
+        # Load any existing model
+        if not force_restart:
+            if state_fpath.exists():
+                print("Found existing model \"%s\", loading it and resuming training." % run_id)
+                checkpoint = torch.load(state_fpath)
+                init_step = checkpoint["step"]
+                model.load_state_dict(checkpoint["model_state"])
+                optimizer.load_state_dict(checkpoint["optimizer_state"])
+                optimizer.param_groups[0]["lr"] = diffVC_encoder_train.learning_rate_init
+            else:
+                print("No model \"%s\" found, starting training from scratch." % run_id)
+        else:
+            print("Starting the training from scratch.")
+        model.train()
+
+        # Initialize the visualization environment
+        vis = Visualizations(run_id, vis_every, server=visdom_server, disabled=no_visdom)
+        vis.log_dataset(dataset)
+        vis.log_params()
+        device_name = str(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU")
+        vis.log_implementation({"Device": device_name})
+
+        # Training loop
+        profiler = Profiler(summarize_every=10, disabled=False)
+        for step, speaker_batch in enumerate(loader, init_step):
+            profiler.tick("Blocking, waiting for batch (threaded)")
+
+            # Forward pass
+            inputs = torch.from_numpy(speaker_batch.data).to(device)
+            diffVC_encoder_train.sync(device)
+            profiler.tick("Data to %s" % device)
+            embeds = model(inputs)
+            diffVC_encoder_train.sync(device)
+            profiler.tick("Forward pass")
+            embeds_loss = embeds.view((diffVC_encoder_train.speakers_per_batch, diffVC_encoder_train.utterances_per_speaker, -1)).to(loss_device)
+            loss, eer = model.loss(embeds_loss)
+            diffVC_encoder_train.sync(loss_device)
+            profiler.tick("Loss")
+
+            # Backward pass
+            model.zero_grad()
+            loss.backward()
+            profiler.tick("Backward pass")
+            model.do_gradient_ops()
+            optimizer.step()
+            profiler.tick("Parameter update")
+
+            # Update visualizations
+            # learning_rate = optimizer.param_groups[0]["lr"]
+            vis.update(loss.item(), eer, step)
+
+            # Draw projections and save them to the backup folder
+            if umap_every != 0 and step % umap_every == 0:
+                print("Drawing and saving projections (step %d)" % step)
+                backup_dir.mkdir(exist_ok=True)
+                projection_fpath = backup_dir.joinpath("%s_umap_%06d.png" % (run_id, step))
+                embeds = embeds.detach().cpu().numpy()
+                vis.draw_projections(embeds, diffVC_encoder_train.utterances_per_speaker, step, projection_fpath)
+                vis.save()
+
+            # Overwrite the latest version of the model
+            if save_every != 0 and step % save_every == 0:
+                print("Saving the model (step %d)" % step)
+                torch.save({
+                    "step": step + 1,
+                    "model_state": model.state_dict(),
+                    "optimizer_state": optimizer.state_dict(),
+                }, state_fpath)
+
+            # Make a backup
+            if backup_every != 0 and step % backup_every == 0:
+                print("Making a backup (step %d)" % step)
+                backup_dir.mkdir(exist_ok=True)
+                backup_fpath = backup_dir.joinpath("%s_bak_%06d.pt" % (run_id, step))
+                torch.save({
+                    "step": step + 1,
+                    "model_state": model.state_dict(),
+                    "optimizer_state": optimizer.state_dict(),
+                }, backup_fpath)
+
+            profiler.tick("Extras (visualizations, saving)")
+
+
+class Visualizations:
+    colormap = np.array([
+        [76, 255, 0],
+        [0, 127, 70],
+        [255, 0, 0],
+        [255, 217, 38],
+        [0, 135, 255],
+        [165, 0, 165],
+        [255, 167, 255],
+        [0, 255, 255],
+        [255, 96, 38],
+        [142, 76, 0],
+        [33, 0, 127],
+        [0, 0, 0],
+        [183, 183, 183],
+    ], dtype=np.float) / 255
+
+    def __init__(self, env_name=None, update_every=10, server="http://localhost", disabled=False):
+        # Tracking data
+        self.last_update_timestamp = timer()
+        self.update_every = update_every
+        self.step_times = []
+        self.losses = []
+        self.eers = []
+        print("Updating the visualizations every %d steps." % update_every)
+
+        # If visdom is disabled TODO: use a better paradigm for that
+        self.disabled = disabled
+        if self.disabled:
+            return
+
+            # Set the environment name
+        now = str(datetime.now().strftime("%d-%m %Hh%M"))
+        if env_name is None:
+            self.env_name = now
+        else:
+            self.env_name = "%s (%s)" % (env_name, now)
+
+        # Connect to visdom and open the corresponding window in the browser
+        try:
+            self.vis = visdom.Visdom(server, env=self.env_name, raise_exceptions=True)
+        except ConnectionError:
+            raise Exception("No visdom server detected. Run the command \"visdom\" in your CLI to "
+                            "start it.")
+        # webbrowser.open("http://localhost:8097/env/" + self.env_name)
+
+        # Create the windows
+        self.loss_win = None
+        self.eer_win = None
+        # self.lr_win = None
+        self.implementation_win = None
+        self.projection_win = None
+        self.implementation_string = ""
+
+    def log_params(self):
+        if self.disabled:
+            return
+        from talkingface.utils.voice_conversion_talkingface import params_data
+        from talkingface.utils.voice_conversion_talkingface import params_model
+        param_string = "<b>Model parameters</b>:<br>"
+        for param_name in (p for p in dir(params_model) if not p.startswith("__")):
+            value = getattr(params_model, param_name)
+            param_string += "\t%s: %s<br>" % (param_name, value)
+        param_string += "<b>Data parameters</b>:<br>"
+        for param_name in (p for p in dir(params_data) if not p.startswith("__")):
+            value = getattr(params_data, param_name)
+            param_string += "\t%s: %s<br>" % (param_name, value)
+        self.vis.text(param_string, opts={"title": "Parameters"})
+
+    def log_dataset(self, dataset: SpeakerVerificationDataset):
+        if self.disabled:
+            return
+        dataset_string = ""
+        dataset_string += "<b>Speakers</b>: %s\n" % len(dataset.speakers)
+        dataset_string += "\n" + dataset.get_logs()
+        dataset_string = dataset_string.replace("\n", "<br>")
+        self.vis.text(dataset_string, opts={"title": "Dataset"})
+
+    def log_implementation(self, params):
+        if self.disabled:
+            return
+        implementation_string = ""
+        for param, value in params.items():
+            implementation_string += "<b>%s</b>: %s\n" % (param, value)
+            implementation_string = implementation_string.replace("\n", "<br>")
+        self.implementation_string = implementation_string
+        self.implementation_win = self.vis.text(
+            implementation_string,
+            opts={"title": "Training implementation"}
+        )
+
+    def update(self, loss, eer, step):
+        # Update the tracking data
+        now = timer()
+        self.step_times.append(1000 * (now - self.last_update_timestamp))
+        self.last_update_timestamp = now
+        self.losses.append(loss)
+        self.eers.append(eer)
+        print(".", end="")
+
+        # Update the plots every <update_every> steps
+        if step % self.update_every != 0:
+            return
+        time_string = "Step time:  mean: %5dms  std: %5dms" % \
+                      (int(np.mean(self.step_times)), int(np.std(self.step_times)))
+        print("\nStep %6d   Loss: %.4f   EER: %.4f   %s" %
+              (step, np.mean(self.losses), np.mean(self.eers), time_string))
+        if not self.disabled:
+            self.loss_win = self.vis.line(
+                [np.mean(self.losses)],
+                [step],
+                win=self.loss_win,
+                update="append" if self.loss_win else None,
+                opts=dict(
+                    legend=["Avg. loss"],
+                    xlabel="Step",
+                    ylabel="Loss",
+                    title="Loss",
+                )
+            )
+            self.eer_win = self.vis.line(
+                [np.mean(self.eers)],
+                [step],
+                win=self.eer_win,
+                update="append" if self.eer_win else None,
+                opts=dict(
+                    legend=["Avg. EER"],
+                    xlabel="Step",
+                    ylabel="EER",
+                    title="Equal error rate"
+                )
+            )
+            if self.implementation_win is not None:
+                self.vis.text(
+                    self.implementation_string + ("<b>%s</b>" % time_string),
+                    win=self.implementation_win,
+                    opts={"title": "Training implementation"},
+                )
+
+        # Reset the tracking
+        self.losses.clear()
+        self.eers.clear()
+        self.step_times.clear()
+
+    def draw_projections(self, embeds, utterances_per_speaker, step, out_fpath=None,
+                         max_speakers=10):
+        max_speakers = min(max_speakers, len(Visualizations.colormap))
+        embeds = embeds[:max_speakers * utterances_per_speaker]
+
+        n_speakers = len(embeds) // utterances_per_speaker
+        ground_truth = np.repeat(np.arange(n_speakers), utterances_per_speaker)
+        colors = [Visualizations.colormap[i] for i in ground_truth]
+
+        reducer = umap.UMAP()
+        projected = reducer.fit_transform(embeds)
+        plt.scatter(projected[:, 0], projected[:, 1], c=colors)
+        plt.gca().set_aspect("equal", "datalim")
+        plt.title("UMAP projection (step %d)" % step)
+        if not self.disabled:
+            self.projection_win = self.vis.matplot(plt, win=self.projection_win)
+        if out_fpath is not None:
+            plt.savefig(out_fpath)
+        plt.clf()
+
+    def save(self):
+        if not self.disabled:
+            self.vis.save([self.env_name])
 
 
 class Wav2LipTrainer(Trainer):

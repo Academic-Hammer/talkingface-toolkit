@@ -4,12 +4,19 @@ import os
 import random
 import pandas as pd
 
+import torchaudio
+
+from librosa.filters import mel as librosa_mel_fn
 import numpy as np
 import torch 
 import torch.nn as nn
 
 from torch.utils.tensorboard import SummaryWriter
 from texttable import Texttable
+
+
+import matplotlib.pyplot as plt
+from scipy.io import wavfile
 
 def get_local_time():
     r"""Get current time
@@ -43,12 +50,12 @@ def get_model(model_name):
         Recommender: model class
     """
     model_submodule = [
-        "audio_driven_talkingface",
+        "voice_conversion",
+        #"audio_driven_talkingface",
         "image_driven_talkingface",
         "nerf_based_talkingface",
-        "text_to_speech",
-        "voice_conversion"
-
+        "text_to_speech"
+        
     ]
 
     model_file_name = model_name.lower()
@@ -433,9 +440,11 @@ def get_preprocess(dataset_name):
 def create_dataset(config):
     r"""Automatically select dataset class based on dataset name
     """
+    dataset_module = None
     model_name = config['model']
     dataset_file_name = model_name.lower()+'_dataset'
     module_path = ".".join(["talkingface.data.dataset", dataset_file_name])
+    print(module_path +"=module_path")
     if importlib.util.find_spec(module_path, __name__):
         dataset_module = importlib.import_module(module_path, __name__)
     if dataset_module is None:
@@ -447,9 +456,44 @@ def create_dataset(config):
     return dataset_class(config, config['train_filelist']), dataset_class(config, config['val_filelist'])
 
 
+#diffVC
+def mse_loss(x, y, mask, n_feats):
+    loss = torch.sum(((x - y)**2) * mask)
+    return loss / (torch.sum(mask) * n_feats)
 
 
+def sequence_mask(length, max_length=None):
+    if max_length is None:
+        max_length = length.max()
+    x = torch.arange(int(max_length), dtype=length.dtype, device=length.device)
+    return x.unsqueeze(0) < length.unsqueeze(1)
 
 
+def convert_pad_shape(pad_shape):
+    l = pad_shape[::-1]
+    pad_shape = [item for sublist in l for item in sublist]
+    return pad_shape
+
+
+def fix_len_compatibility(length, num_downsamplings_in_unet=2):
+    while True:
+        if length % (2**num_downsamplings_in_unet) == 0:
+            return length
+        length += 1
+
+def save_plot(tensor, savepath):
+    plt.style.use('default')
+    fig, ax = plt.subplots(figsize=(12, 3))
+    im = ax.imshow(tensor, aspect="auto", origin="lower", interpolation='none')
+    plt.colorbar(im, ax=ax)
+    plt.tight_layout()
+    fig.canvas.draw()
+    plt.savefig(savepath)
+    plt.close()
+
+
+def save_audio(file_path, sampling_rate, audio):
+    audio = np.clip(audio.detach().cpu().squeeze().numpy(), -0.999, 0.999)
+    wavfile.write(file_path, sampling_rate, (audio * 32767).astype("int16"))
 
 
