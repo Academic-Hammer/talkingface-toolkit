@@ -3,7 +3,6 @@ import os
 import sys
 import yaml
 from logging import getLogger
-from typing import Literal
 
 from talkingface.utils import(
     get_model,
