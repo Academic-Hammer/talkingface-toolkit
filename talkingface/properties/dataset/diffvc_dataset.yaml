@@ -1,0 +1,19 @@
+---
+data_dir: 'dataset/diffvc_data/'
+val_file: "dataset/diffvc_data/filelist/valid.txt"  # 注意：修复了注释位置dataset/diffvc_data/filelist/valid.txt
+exc_file: "dataset/diffvc_data/filelist/exceptions_libritts.txt"  # 注意：修复了注释位置
+log_dir: 'logs_dec'
+enc_dir: 'logs_enc'
+epochs: 10
+batch_size: 2
+learning_rate: 1e-4
+save_every: 1
+
+# Train
+checkpoint_sub_dir: "/diffvc" # 和overall.yaml里checkpoint_dir拼起来作为最终目录
+
+temp_sub_dir: "/diffvc" # 和overall.yaml里temp_dir拼起来作为最终目录
+
+train_filelist: 'dataset/diff_data/filelist/valid.txt' # 当前数据集的数据划分文件 train
+test_filelist: 'dataset/diff_data/filelist/valid.txt' # 当前数据集的数据划分文件 test
+val_filelist: 'dataset/diff_data/filelist/valid.txt' # 当前数据集的数据划分文件 val

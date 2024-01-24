@@ -77,13 +77,12 @@ def run_talkingface(
 
     train_dataset, val_dataset = create_dataset(config)
     train_data_loader = data_utils.DataLoader(
-        train_dataset, batch_size=config["batch_size"], shuffle=True
-    )
+       train_dataset, batch_size=config["batch_size"], shuffle=False)
     val_data_loader = data_utils.DataLoader(
         val_dataset, batch_size=config["batch_size"], shuffle=False
     )
 
-    # load model
+    #load model
     model = get_model(config["model"])(config).to(config["device"])
     logger.info(model)
 

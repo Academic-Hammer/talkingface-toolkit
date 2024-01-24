@@ -3,7 +3,11 @@ import os
 import sys
 import yaml
 from logging import getLogger
-from typing import Literal
+#from typing import Literal
+from typing_extensions import Literal
+
+
+
 
 from talkingface.utils import(
     get_model,
@@ -180,6 +184,7 @@ class Config(object):
     def _get_model_and_dataset(self, model, dataset):
         if model is None:
             try:
+                print("external_config_dict")
                 model = self.external_config_dict["model"]
             except KeyError:
                 raise KeyError(
@@ -203,11 +208,14 @@ class Config(object):
                 )
         else:
             final_dataset = dataset
-
+        print(final_model)
+        print(final_model_class)
+        print(final_dataset)
         return final_model, final_model_class, final_dataset
     
     def _update_internal_config_dict(self, file):
         with open(file, "r", encoding="utf-8") as f:
+            print(self.yaml_loader)
             config_dict = yaml.load(f.read(), Loader=self.yaml_loader)
             if config_dict is not None:
                 self.internal_config_dict.update(config_dict)
