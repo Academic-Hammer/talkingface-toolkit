@@ -1,4 +1,5 @@
 import argparse
+import torch
 from talkingface.quick_start import run
 
 if __name__ == "__main__":

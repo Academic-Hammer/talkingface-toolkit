@@ -20,7 +20,7 @@ stopping_step: 10               # (int) The threshold for validation-based early
 weight_decay: 0.0               # (float) The weight decay value (L2 penalty) for optimizers.
 saved: True
 resume: True
-train: True
+train: False
 
 # Evaluation Settings
 metrics: ["LSE", "SSIM"]

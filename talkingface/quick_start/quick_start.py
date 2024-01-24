@@ -1,5 +1,6 @@
 import logging
 import sys
+import torch
 import torch.distributed as dist
 from collections.abc import MutableMapping
 from logging import getLogger
@@ -64,6 +65,7 @@ def run_talkingface(
         config_file_list=config_file_list,
         config_dict=config_dict,
     )
+
     init_seed(config["seed"], config["reproducibility"])
     init_logger(config)
     logger = getLogger()
@@ -82,11 +84,9 @@ def run_talkingface(
     val_data_loader = data_utils.DataLoader(
         val_dataset, batch_size=config["batch_size"], shuffle=False
     )
-
     # load model
     model = get_model(config["model"])(config).to(config["device"])
     logger.info(model)
-
     trainer = get_trainer(config["model"])(config, model)
 
     # model training

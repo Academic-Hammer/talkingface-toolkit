@@ -50,7 +50,6 @@ def get_model(model_name):
         "voice_conversion"
 
     ]
-
     model_file_name = model_name.lower()
     model_module = None
     for submodule in model_submodule:
@@ -445,11 +444,3 @@ def create_dataset(config):
     dataset_class = getattr(dataset_module, model_name+'Dataset')
 
     return dataset_class(config, config['train_filelist']), dataset_class(config, config['val_filelist'])
-
-
-
-
-
-
-
-

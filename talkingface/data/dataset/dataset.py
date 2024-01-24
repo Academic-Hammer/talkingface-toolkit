@@ -1,4 +1,14 @@
+"""This module implements an abstract base class (ABC) 'dataset' for datasets.
+
+It also includes common transformation functions (e.g., get_transform, __scale_width), which can be later used in subclasses.
+"""
 import torch
+import torch.utils.data as data
+from abc import ABC, abstractmethod
+from PIL import Image
+import torchvision.transforms as transforms
+import numpy as np
+
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, config, datasplit):
@@ -13,13 +23,32 @@ class Dataset(torch.utils.data.Dataset):
         self.config = config
         self.split = datasplit
 
-    def __getitem__(self):
+    @abstractmethod
+    def __getitem__(self, index):
+        """Return a data point and its metadata information.
 
-        """
+        Parameters:
+            index - - a random integer for data indexing
+
         Returns:
-            data: dict, 必须是一个字典格式, 具体数据解析在model文件里解析
-
+            a dictionary of data with their names. It ususally contains the data itself and its metadata information.
         """
+        pass
 
 
-        raise NotImplementedError
+    @abstractmethod
+    def __len__(self):
+        """Return the total number of images in the dataset."""
+        return 0
+
+    def modify_commandline_options(parser, is_train):
+        """Add new dataset-specific options, and rewrite default values for existing options.
+
+        Parameters:
+            parser          -- original option parser
+            is_train (bool) -- whether training phase or test phase. You can use this flag to add training-specific or test-specific options.
+
+        Returns:
+            the modified parser.
+        """
+        return parser
