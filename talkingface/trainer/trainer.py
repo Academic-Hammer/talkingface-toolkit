@@ -2,7 +2,7 @@ import os
 
 from logging import getLogger
 from time import time
-#import dlib, json, subprocess
+import dlib, json, subprocess
 import torch.nn.functional as F
 import glob
 import numpy as np
@@ -36,10 +36,10 @@ import numpy as np
 import talkingface.properties.model.params as params
 
 from talkingface.model.voice_conversion.diffvc import diffvc
-# import webbrowser
-#import visdom
-#import umap
-#import talkingface.properties.model.diffvctrain_params as params
+import webbrowser
+import visdom
+import umap
+
 
 from talkingface.utils import(
     ensure_dir,
@@ -52,7 +52,7 @@ from talkingface.utils import(
     get_gpu_usage,
     WandbLogger
 )
-#from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
+from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
 from talkingface.evaluator import Evaluator
 
 
@@ -545,10 +545,8 @@ class diffvcTrainer(Trainer):
             model.train()
             losses = []
             for batch in tqdm(train_loader, total=len(train_set)//batch_size):
-                    mel, mel_ref = batch['mel1'].cuda(), batch['mel2']
-                    #.cuda()
-                    c, mel_lengths = batch['c'].cuda(), batch['mel_lengths']
-                    #.cuda()
+                    mel, mel_ref = batch['mel1'].cuda(), batch['mel2'].cuda()
+                    c, mel_lengths = batch['c'].cuda(), batch['mel_lengths'].cuda()
                     model.zero_grad()
                     loss = model.compute_loss(mel, mel_lengths, mel_ref, c)
                     loss.backward()
@@ -574,12 +572,9 @@ class diffvcTrainer(Trainer):
                 for i, (mel, c) in enumerate(mels):
                     if i >= test_size:
                             break
-                    mel = mel.unsqueeze(0).float()
-                        #.cuda()
-                    c = c.unsqueeze(0).float()
-                        #.cuda()
-                    mel_lengths = torch.LongTensor([mel.shape[-1]])
-                        #.cuda()
+                    mel = mel.unsqueeze(0).float().cuda()
+                    c = c.unsqueeze(0).float().cuda()
+                    mel_lengths = torch.LongTensor([mel.shape[-1]]).cuda()
                     mel_avg, mel_rec = model(mel, mel_lengths, mel, mel_lengths, c, 
                                                 n_timesteps=100)
                     if epoch == save_every:
