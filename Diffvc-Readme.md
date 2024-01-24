@@ -58,21 +58,15 @@ VCTK：https://drive.google.com/file/d/12s9RPmwp9suleMkBCVetD8pub7wsDAy4/view?us
 
 ②运行inference文件的第一部分，配置相应的环境（注：librosa版本为0.9.2）
 
-|      |                                                              |
-| ---- | ------------------------------------------------------------ |
-|      | ![img](file:///C:\Users\liberty\AppData\Local\Temp\ksohtml9656\wps1.jpg) |
+ ![img](file:///C:\Users\liberty\AppData\Local\Temp\ksohtml9656\wps1.jpg) |
 
 ③对inference文件的第二个代码块中的get_mel函数和get_embed函数进行阅读，编写相关代码分别对原wav文件运行这两个函数。对原始数据运行get_mel函数生成mel文件，运行get_embed函数生成embed文件，分别保存在两个文件夹中。（注意，这里需要调用spk_encoder的预训练模型，下载之后引用其路径即可）
 
-|      |                                                              |
-| ---- | ------------------------------------------------------------ |
-|      | ![img](file:///C:\Users\liberty\AppData\Local\Temp\ksohtml9656\wps2.jpg) |
+ ![img](file:///C:\Users\liberty\AppData\Local\Temp\ksohtml9656\wps2.jpg) |
 
 ④在原代码中补充引用预训练模型、提取wav文件并执行两个函数，并分别保存到相应的两个文件夹中且正确命名的代码：
 
-|      |                                                              |
-| ---- | ------------------------------------------------------------ |
-|      | ![img](file:///C:\Users\liberty\AppData\Local\Temp\ksohtml9656\wps3.jpg) |
+ ![img](file:///C:\Users\liberty\AppData\Local\Temp\ksohtml9656\wps3.jpg) |
 
 ⑤运行该代码块，即可得到处理后的embed和mel文件。
 
