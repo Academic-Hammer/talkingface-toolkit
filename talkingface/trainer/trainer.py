@@ -2,9 +2,7 @@ import os
 
 from logging import getLogger
 from time import time
-import dlib, json, subprocess
-import torch.nn.functional as F
-import glob
+
 import numpy as np
 import torch
 import torch.optim as optim
@@ -450,69 +448,72 @@ class Trainer(AbstractTrainer):
 
 
 
-class GlowttsTrainer(Trainer):
-    def __init__(self, config, model,
-                 decoder=GlowttsTrainer.model.text_to_speech.vits.MultiPeriodDiscriminator,
-                 decoder_optimizer=torch.optim.AdamW):
-        super(GlowttsTrainer, self).__init__(config, model)
+class GlowTTSTrainer(Trainer):
+    def __init__(self, config, model):
+        super(GlowTTSTrainer, self).__init__(config, model)
 
-        self.net_g = self.model
-        self.optim_g = self.optimizer
-        self.net_d = decoder(use_spectral_norm=False).cuda()    
-        self.optim_d = decoder_optimizer(self.net_d.parameters(), lr=2e-4, betas=(0.8, 0.99), eps=1e-9)
+    def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
+        r"""Train the model in an epoch
+
+        Args:
+            train_data (DataLoader): The train data.
+            epoch_idx (int): The current epoch id.
+            loss_func (function): The loss function of :attr:`model`. If it is ``None``, the loss function will be
+                :attr:`self.model.calculate_loss`. Defaults to ``None``.
+            show_progress (bool): Show the progress of training epoch. Defaults to ``False``.
+
+        Returns:
+            the averaged loss of this epoch
+        """
+        self.model.train()
 
 
-def train(rank, epoch, hps, generator, optimizer_g, train_loader, logger, writer):
-  train_loader.sampler.set_epoch(epoch)
-  global global_step
+        loss_func = loss_func or self.model.calculate_loss
+        total_loss_dict = {}
+        step = 0
+        iter_data = (
+            tqdm(
+            train_data,
+            total=len(train_data),
+            ncols=None,
+            )
+            if show_progress
+            else train_data
+        )
 
-  generator.train()
-  for batch_idx, (x, x_lengths, y, y_lengths) in enumerate(train_loader):
-    x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(rank, non_blocking=True)
-    y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
+        for batch_idx, interaction in enumerate(iter_data):
+            self.optimizer.zero_grad()
+            step += 1
+            losses_dict = loss_func(interaction)
+            loss = losses_dict["loss"]
 
-    # Train Generator
-    optimizer_g.zero_grad()
-    
-    (z, z_m, z_logs, logdet, z_mask), (x_m, x_logs, x_mask), (attn, logw, logw_) = generator(x, x_lengths, y, y_lengths, gen=False)
-    l_mle = commons.mle_loss(z, z_m, z_logs, logdet, z_mask)
-    l_length = commons.duration_loss(logw, logw_, x_lengths)
+            for key, value in losses_dict.items():
+                if key in total_loss_dict:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] += value
+                    # 如果键已经在总和字典中，累加当前值
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] += value.item()
+                else:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] = value
+                    # 否则，将当前值添加到字典中
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] = value.item()
+            iter_data.set_description(set_color(f"train {epoch_idx} {losses_dict}", "pink"))
 
-    loss_gs = [l_mle, l_length]
-    loss_g = sum(loss_gs)
+            self._check_nan(loss)
+            loss.backward()
+            self.optimizer.step()
+        average_loss_dict = {}
+        for key, value in total_loss_dict.items():
+            average_loss_dict[key] = value/step
 
-    if hps.train.fp16_run:
-      with amp.scale_loss(loss_g, optimizer_g._optim) as scaled_loss:
-        scaled_loss.backward()
-      grad_norm = commons.clip_grad_value_(amp.master_params(optimizer_g._optim), 5)
-    else:
-      loss_g.backward()
-      grad_norm = commons.clip_grad_value_(generator.parameters(), 5)
-    optimizer_g.step()
-    
-    if rank==0:
-      if batch_idx % hps.train.log_interval == 0:
-        (y_gen, *_), *_ = generator.module(x[:1], x_lengths[:1], gen=True)
-        logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-          epoch, batch_idx * len(x), len(train_loader.dataset),
-          100. * batch_idx / len(train_loader),
-          loss_g.item()))
-        logger.info([x.item() for x in loss_gs] + [global_step, optimizer_g.get_lr()])
+        return average_loss_dict
+
         
-        scalar_dict = {"loss/g/total": loss_g, "learning_rate": optimizer_g.get_lr(), "grad_norm": grad_norm}
-        scalar_dict.update({"loss/g/{}".format(i): v for i, v in enumerate(loss_gs)})
-        utils.summarize(
-          writer=writer,
-          global_step=global_step, 
-          images={"y_org": utils.plot_spectrogram_to_numpy(y[0].data.cpu().numpy()), 
-            "y_gen": utils.plot_spectrogram_to_numpy(y_gen[0].data.cpu().numpy()), 
-            "attn": utils.plot_alignment_to_numpy(attn[0,0].data.cpu().numpy()),
-            },
-          scalars=scalar_dict)
-    global_step += 1
-  
-  if rank == 0:
-    logger.info('====> Epoch: {}'.format(epoch))
     
     def _valid_epoch(self, valid_data, loss_func=None, show_progress=False):
         print('Valid'.format(self.eval_step))
