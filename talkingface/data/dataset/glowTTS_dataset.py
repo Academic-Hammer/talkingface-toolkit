@@ -10,13 +10,22 @@ from talkingface.utils.glowTTS_utils.text import text_to_sequence, cmudict
 from talkingface.utils.glowTTS_utils.text.symbols import symbols
 
 
-class TextMelLoader(Dataset):
+class GlowTTSDataset(Dataset):
+    def __init__(self,config,datasplit):
+        super().__init__(config,datasplit)
+        self.dataset = TextMelLoader(audiopaths_and_text=datasplit, hparams=config)
+    def __getitem__(self, index):
+        return self.dataset.__getitem__(index)
+    def __len__(self):
+        return self.dataset.__len__()
+
+class TextMelLoader(torch.utils.data.Dataset):
     """
         1) loads audio,text pairs
         2) normalizes text and converts them to sequences of one-hot vectors
         3) computes mel-spectrograms from audio files.
     """
-    def __init__(self, config, datasplit, audiopaths_and_text, hparams):
+    def __init__(self, audiopaths_and_text, hparams):
         super().__init__(config,datasplit)
         self.audiopaths_and_text = load_filepaths_and_text(audiopaths_and_text)
         self.text_cleaners = hparams.text_cleaners
@@ -39,7 +48,7 @@ class TextMelLoader(Dataset):
         audiopath, text = audiopath_and_text[0], audiopath_and_text[1]
         text = self.get_text(text)
         mel = self.get_mel(audiopath)
-        return {"text":text, "mel":mel}
+        return (text, mel)
 
     def get_mel(self, filename):
         if not self.load_mel_from_disk:
@@ -115,6 +124,9 @@ class TextMelCollate():
             mel_padded[i, :, :mel.size(1)] = mel
             output_lengths[i] = mel.size(1)
 
-        return text_padded, input_lengths, mel_padded, output_lengths
-
+        # return text_padded, input_lengths, mel_padded, output_lengths
+        return {"text_padded": text_padded,
+                "input_lengths": input_lengths,
+                "mel_padded": mel_padded,
+                "output_lengths": output_lengths}
 
