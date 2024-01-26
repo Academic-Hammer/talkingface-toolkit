@@ -144,18 +144,22 @@ zipp==3.17.0
 1.	设置properties/overall.yaml，设置公有默认参数
 2.	设置dataset/evp_dataset.py preprocess.py，设置加载数据方式和预训练
 3.	合作完成文档工作
+   
 **邹宇：**
 1.	合作调试模型audio_driven_talkingface，实现基类中calculate、predict等函数
 2.	分析项目工程文件
 3.	合作完成文档工作
+   
 **王宇凡：**
 1.	合作调试模型audio_driven_talkingface，调试函数参数和接口
 2.	分析项目工程文件
 3.	合作完成文档工作
+   
 **李泽卿：**
 1.	合作调试模型nerf_based_talkingface，实现基类中calculate、predict等函数
 2.	数据集处理并上传云端
 3.	合作完成文档工作
+
 **谢忱：**
 1.	调试train实现evaluate()
 2.	合作调试模型nerf_based_talkingface，设置接口
