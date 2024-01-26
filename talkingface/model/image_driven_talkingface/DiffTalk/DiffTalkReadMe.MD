@@ -108,8 +108,9 @@ The paper "DiffTalk: Crafting Diffusion Models for Generalized Audio-Driven Port
 An overview of the DiffTalk is shown in the follwing figure.
 <img src="method.png" width="932" height="391">
 
+<br>
 The visualization results are shown in the follwing figure.
-<img src="result.png" width="712" height="555">
+<img src="result.png" width="407" height="280">
 
 Here are 5 videos to show the effectiveness of the method:
 ①"This administration and this congress have governed with cruelty and have broken every promise they made to the American people.
