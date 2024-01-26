@@ -1,9 +1,3 @@
-python meta_portrait_base_inference.py --save_dir ./saved --config ./talkingface/properties/model/meta_portrait_base_config/meta_portrait_256_eval.yaml --ckpt ./saved/ckpt_base.pth.tar
-
-python meta_portrait_base_main.py --config ./talkingface/properties/model/meta_portrait_base_config/meta_portrait_256_pretrain_warp.yaml --fp16 --stage Warp --task Pretrain
-
-
-
 # talkingface-toolkit
 ## 框架整体介绍
 ### checkpoints
