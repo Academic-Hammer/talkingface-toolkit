@@ -186,7 +186,7 @@ class FlowSpecDecoder(nn.Module):
       f.store_inverse()
 
 
-class FlowGenerator(nn.Module):
+class FlowGenerator(AbstractTalkingFace):
   def __init__(self, 
       n_vocab, 
       hidden_channels, 
@@ -327,6 +327,49 @@ class FlowGenerator(nn.Module):
     self.decoder.store_inverse()
 
 
+  def calculate_loss(self, interaction):
+    """Calculate the training loss for a batch data.
+
+    Args:
+        interaction (Interaction): Interaction class of the batch.
+
+    Returns:
+        dict: {"loss": loss, "xxx": xxx}
+        返回是一个字典,loss 这个键必须有,它代表了加权之后的总loss。
+        因为有时总loss可能由多个部分组成。xxx代表其它各部分loss
+    """
+    from talkingface.utils.glowTTS_utils import commons
+    _interaction,generator = interaction
+    x, x_lengths = _interaction["text_padded"],_interaction["input_lengths"]
+    y, y_lengths = _interaction["mel_padded"],_interaction["output_lengths"]
+    x, x_lengths = x.cuda(non_blocking=True), x_lengths.cuda(non_blocking=True)
+    y, y_lengths = y.cuda(non_blocking=True), y_lengths.cuda(non_blocking=True)
+
+    
+    (z, z_m, z_logs, logdet, z_mask), (x_m, x_logs, x_mask), (attn, logw, logw_) = generator(x, x_lengths, y, y_lengths, gen=False)
+    l_mle = commons.mle_loss(z, z_m, z_logs, logdet, z_mask)
+    l_length = commons.duration_loss(logw, logw_, x_lengths)
+
+    loss_gs = [l_mle, l_length]
+    loss_g = sum(loss_gs)
+    return {"loss":loss_g,"loss_gs":loss_gs}
+
+
+def predict(self, interaction):
+    r"""Predict the scores between users and items.
+
+    Args:
+        interaction (Interaction): Interaction class of the batch.
+
+    Returns:
+        video/image numpy/tensor
+    """
+    raise NotImplementedError
+
+def generate_batch():
+    pass
+
+
 class SynthesizerTrn(AbstractTalkingFace):
   def __init__(self, config):
     super().__init__(config)
@@ -387,6 +430,7 @@ class SynthesizerTrn(AbstractTalkingFace):
     
   def save_gin(self, path):
     torch.save({'model': self.model.state_dict()}, path)
+
 
         
 
