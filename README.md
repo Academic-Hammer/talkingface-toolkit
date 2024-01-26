@@ -131,10 +131,36 @@ zipp==3.17.0
 
 3)运行 python run_talkingface.py –model=evp –dataset=evpDataset
 
-#### **4.实验中遇到的问题**
+#### 4.实验中遇到的问题
 
 1)由于是使用给定框架将evp模型嵌入，因此在实验过程中发现，有时候一些可能在框架中集成了但是需要补充的部分不容易找到，容易忽略到一部分内容。
 
 2)一开始没有调整初始的epoch，导致在实验中可能eval的部分有问题，但是需要等很久，等到所有训练完成后才发现，这就导致时间上的浪费
 
 3)在处理evp提供的数据集时也发现了问题，因为evp源代码提供的数据预处理部分本身是有问题的，这就导致需要自己对这部分的代码进行修改，但这样也很容易出错，因为得到的结果可能和作者期望的存在差距，这就需要仔细阅读论文以及github上的别的人提出的问题以及解答
+
+#### 5.人员分工
+**邢家瑞：**
+1.	设置properties/overall.yaml，设置公有默认参数
+2.	设置dataset/evp_dataset.py preprocess.py，设置加载数据方式和预训练
+3.	合作完成文档工作
+   
+**邹宇：**
+1.	合作调试模型audio_driven_talkingface，实现基类中calculate、predict等函数
+2.	分析项目工程文件
+3.	合作完成文档工作
+   
+**王宇凡：**
+1.	合作调试模型audio_driven_talkingface，调试函数参数和接口
+2.	分析项目工程文件
+3.	合作完成文档工作
+   
+**李泽卿：**
+1.	合作调试模型nerf_based_talkingface，实现基类中calculate、predict等函数
+2.	数据集处理并上传云端
+3.	合作完成文档工作
+
+**谢忱：**
+1.	调试train实现evaluate()
+2.	合作调试模型nerf_based_talkingface，设置接口
+3.	进行模型的训练和评估
