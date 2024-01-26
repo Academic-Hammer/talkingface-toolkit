@@ -106,7 +106,7 @@ Or just Call the API. You can see the loaded model:
 The paper "DiffTalk: Crafting Diffusion Models for Generalized Audio-Driven Portraits Animation" introduces a novel method for synthesizing high-fidelity, audio-driven talking head videos. This method, called DiffTalk, leverages the capabilities of Latent Diffusion Models. It focuses on generating temporally coherent talking head videos by using audio signals, reference face images, and landmarks as conditions. This approach allows for the creation of personalized, synchronized talking videos without the need for additional fine-tuning, even for different identities. The paper also demonstrates the method's ability to be adapted for higher-resolution synthesis without significant computational cost. Extensive experiments validate the effectiveness of DiffTalk in synthesizing high-quality talking head videos for a wide range of identities.
 
 An overview of the DiffTalk is shown in the follwing figure.
-<img src="method.png" width="100" height="100">
+<img src="method.png" width="932" height="391">
 
 The visualization results are shown in the follwing figure.
 ![result](result.png)
