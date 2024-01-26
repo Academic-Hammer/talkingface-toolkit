@@ -51,8 +51,8 @@ model_params:
   w_hpf: 0
   F0_channel: 256
 
-  vocoder_path: "talkingface-toolkit/checkpoints/checkpoint-2500000steps.pkl"
-  emotion_encoder_path: "talkingface-toolkit/checkpoints/emotion_embedding_second_stage.pth"
+  vocoder_path: "talkingface-toolkit/voice_conversion/Utils/vocoder/checkpoint-2500000steps.pkl"
+  emotion_encoder_path: "talkingface-toolkit/voice_conversion/Utils/emotion_encoder/emotion_embedding_second_stage.pth"
 
 
 loss_params:
