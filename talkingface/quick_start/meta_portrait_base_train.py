@@ -25,10 +25,10 @@ def get_dataset(conf, name, is_train=True):
         raise Exception("Unsupported dataset type: {}".format(name))
 
 
-def get_params():
-
-    parser = argparse.ArgumentParser(description='Image Animation for Immersive Meeting Training Scripts',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+def get_params(parser = None):
+    if parser == None:
+        parser = argparse.ArgumentParser(description='Image Animation for Immersive Meeting Training Scripts',
+                formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--ckpt', type=str, help='load checkpoint path')
     parser.add_argument("--config", type=str, default="config/test.yaml", help="path to config")
@@ -86,9 +86,13 @@ def main(rank, args):
 
     train_ddp(args, conf, models, datasets)
         
-
-if __name__ == '__main__':
-    params = get_params()
+def meta_portrait_base_train(parser = None):
+    params = get_params(parser)
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     params.ngpus = torch.cuda.device_count()
     mp.spawn(main, nprocs=params.ngpus, args=(params,))
+# if __name__ == '__main__':
+#     params = get_params()
+#     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+#     params.ngpus = torch.cuda.device_count()
+#     mp.spawn(main, nprocs=params.ngpus, args=(params,))

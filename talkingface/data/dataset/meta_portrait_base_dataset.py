@@ -272,7 +272,7 @@ class PersonalMetaDataset(data.Dataset):
 
         self.num_mask_classes = self.conf['dataset'].get('num_mask_classes', 11)
 
-        with open('./utils/dense_669_connectivity.tsv') as f:
+        with open('./talkingface/utils/meta_portrait_base_utils/dense_669_connectivity.tsv') as f:
             lines = f.readlines()
             self.connectivity = [(int(m.split(' ')[0]), int(m.split(' ')[1])) for m in lines]
 

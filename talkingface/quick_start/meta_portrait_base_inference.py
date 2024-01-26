@@ -87,10 +87,10 @@ def evaluation(args, conf):
 
     save_to_video(args, test_dataloader.dataset.data['imgs'])
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Image Animation for Immersive Meeting Evaluation Scripts',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+def meta_portrait_base_inference(parser = None):
+    if parser == None:
+        parser = argparse.ArgumentParser(description='Image Animation for Immersive Meeting Evaluation Scripts',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--save_dir', type=str, default='../../', help='image save dir')
     parser.add_argument('--ckpt', type=str, help='load checkpoint path')
@@ -103,3 +103,19 @@ if __name__ == "__main__":
         conf = yaml.safe_load(f)
 
     evaluation(args, conf)
+
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser(description='Image Animation for Immersive Meeting Evaluation Scripts',
+#             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+#     parser.add_argument('--save_dir', type=str, default='../../', help='image save dir')
+#     parser.add_argument('--ckpt', type=str, help='load checkpoint path')
+#     parser.add_argument("--config", type=str, default="config/test.yaml", help="path to config")
+
+#     args = vars(parser.parse_args())
+#     args['device'] = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
+#     with open(args['config']) as f:
+#         conf = yaml.safe_load(f)
+
+#     evaluation(args, conf)
