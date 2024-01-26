@@ -110,15 +110,15 @@ An overview of the DiffTalk is shown in the follwing figure.
 
 <br>
 The visualization results are shown in the follwing figure.
-<img src="result.png" width="407" height="280">
+<img src="result.png" width="587" height="492">
 
 Here are 5 videos to show the effectiveness of the method:
-①"This administration and this congress have governed with cruelty and have broken every promise they made to the American people.
+<br>①"This administration and this congress have governed with cruelty and have broken every promise they made to the American people.
 During the campaign we heard the president promised that he would keep jobs here at home buy and hire Americanand hold countries like China accountable."
-②"Good for the economy I mean what we see is most likely of the ranking member Maxine Waters would become the chairman should the democrats take over. She has been leading the impeachment charge in the house. She is called for te harassment of the presidents' administration and members."
-③"End to the other I talked to everybody that I can find folks waking their dog filling up their gas tank. I talked to them about what matters to them, what worries them and what congress should be doing to help."
-④"Nations annual metting. First of all, thank you for your hardworking and advocacy on behalf of one of our state's greatest treasures. And that's our public lands."
-⑤"Ninety days to get assad out of that country so that we can stabilise it and then we need to do the work of bringing in special forces. If we would have kept that base in Iraq that we should have kept when the president  couldn't get the status of forces agreement signed. I think that that would have been a big help. Now that there's new government in Iraq, I think we should revisit that and see if we can get."
+<br>②"Good for the economy I mean what we see is most likely of the ranking member Maxine Waters would become the chairman should the democrats take over. She has been leading the impeachment charge in the house. She is called for te harassment of the presidents' administration and members."
+<br>③"End to the other I talked to everybody that I can find folks waking their dog filling up their gas tank. I talked to them about what matters to them, what worries them and what congress should be doing to help."
+<br>④"Nations annual metting. First of all, thank you for your hardworking and advocacy on behalf of one of our state's greatest treasures. And that's our public lands."
+<br>⑤"Ninety days to get assad out of that country so that we can stabilise it and then we need to do the work of bringing in special forces. If we would have kept that base in Iraq that we should have kept when the president  couldn't get the status of forces agreement signed. I think that that would have been a big help. Now that there's new government in Iraq, I think we should revisit that and see if we can get."
 
 ## Acknowledgement
 This code is built on https://github.com/sstzal/DiffTalk
