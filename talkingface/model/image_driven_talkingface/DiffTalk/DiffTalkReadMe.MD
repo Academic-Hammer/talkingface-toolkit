@@ -109,7 +109,7 @@ An overview of the DiffTalk is shown in the follwing figure.
 <img src="method.png" width="932" height="391">
 
 The visualization results are shown in the follwing figure.
-<img src="result.png" width="1012" height="855">
+<img src="result.png" width="912" height="755">
 
 ## Acknowledgement
 This code is built on https://github.com/sstzal/DiffTalk
