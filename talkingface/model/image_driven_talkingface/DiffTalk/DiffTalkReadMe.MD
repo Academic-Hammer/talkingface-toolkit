@@ -1,8 +1,19 @@
-# DiffTalk #
+# DiffTalk (Reproduced by Huanran & Zhangshuo)#
 The pytorch implementation for "DiffTalk: Crafting Diffusion Models for Generalized Audio-Driven Portraits Animation".
-Incorporated in this framework by Huanran Chen.
+Incorporated in this framework by Huanran Chen and Shuo Zhang.
 
-## Extra requirements for training and inference
+## Paper
+The paper "DiffTalk: Crafting Diffusion Models for Generalized Audio-Driven Portraits Animation" introduces a novel method for synthesizing high-fidelity, audio-driven talking head videos. This method, called DiffTalk, leverages the capabilities of Latent Diffusion Models. It focuses on generating temporally coherent talking head videos by using audio signals, reference face images, and landmarks as conditions. This approach allows for the creation of personalized, synchronized talking videos without the need for additional fine-tuning, even for different identities. The paper also demonstrates the method's ability to be adapted for higher-resolution synthesis without significant computational cost. Extensive experiments validate the effectiveness of DiffTalk in synthesizing high-quality talking head videos for a wide range of identities.
+
+An overview of the DiffTalk is shown in the follwing figure.
+<img src="method.png" width="932" height="391">
+
+<br>
+The visualization results are shown in the follwing figure.
+<img src="result.png" width="587" height="492">
+
+
+## Extra requirements for training and inference (examined by us)
 training:
 - pytorch-lightning 1.2.5 (Also required for loading models)
 
@@ -110,22 +121,13 @@ During the campaign we heard the president promised that he would keep jobs here
 <br>②"Good for the economy I mean what we see is most likely of the ranking member Maxine Waters would become the chairman should the democrats take over. She has been leading the impeachment charge in the house. She is called for te harassment of the presidents' administration and members."
 ![Good for the economy I mean what we see is most likely of the ranking member Maxine Waters would become the chairman should the democrats take over. She has been leading the impeachment charge in the house. She is called for te harassment of the presidents' administration and members.](https://github.com/huanranchen/talkingface-toolkit/blob/main/talkingface/model/image_driven_talkingface/DiffTalk/our_demos/2.gif)
 <br>③"End to the other I talked to everybody that I can find folks waking their dog filling up their gas tank. I talked to them about what matters to them, what worries them and what congress should be doing to help."
-![End to the other I talked to everybody that I can find folks waking their dog filling up their gas tank. I talked to them about what matters to them, what worries them and what congress should be doing to help.](https://github.com/huanranchen/talkingface-toolkit/blob/main/talkingface/model/image_driven_talkingface/DiffTalk/our_demos/3.mp4)
+![End to the other I talked to everybody that I can find folks waking their dog filling up their gas tank. I talked to them about what matters to them, what worries them and what congress should be doing to help.](https://github.com/huanranchen/talkingface-toolkit/blob/main/talkingface/model/image_driven_talkingface/DiffTalk/our_demos/3.gif)
 <br>④"Nations annual metting. First of all, thank you for your hardworking and advocacy on behalf of one of our state's greatest treasures. And that's our public lands."
 ![Nations annual metting. First of all, thank you for your hardworking and advocacy on behalf of one of our state's greatest treasures. And that's our public lands.](https://github.com/huanranchen/talkingface-toolkit/blob/main/talkingface/model/image_driven_talkingface/DiffTalk/our_demos/4.gif)
 <br>⑤"Ninety days to get assad out of that country so that we can stabilise it and then we need to do the work of bringing in special forces. If we would have kept that base in Iraq that we should have kept when the president  couldn't get the status of forces agreement signed. I think that that would have been a big help. Now that there's new government in Iraq, I think we should revisit that and see if we can get."
-![Ninety days to get assad out of that country so that we can stabilise it and then we need to do the work of bringing in special forces. If we would have kept that base in Iraq that we should have kept when the president  couldn't get the status of forces agreement signed. I think that that would have been a big help. Now that there's new government in Iraq, I think we should revisit that and see if we can get.]https://github.com/huanranchen/talkingface-toolkit/blob/main/talkingface/model/image_driven_talkingface/DiffTalk/our_demos/5.gif
+![Ninety days to get assad out of that country so that we can stabilise it and then we need to do the work of bringing in special forces. If we would have kept that base in Iraq that we should have kept when the president  couldn't get the status of forces agreement signed. I think that that would have been a big help. Now that there's new government in Iraq, I think we should revisit that and see if we can get.](https://github.com/huanranchen/talkingface-toolkit/blob/main/talkingface/model/image_driven_talkingface/DiffTalk/our_demos/5.gif)
 
 
-## Paper
-The paper "DiffTalk: Crafting Diffusion Models for Generalized Audio-Driven Portraits Animation" introduces a novel method for synthesizing high-fidelity, audio-driven talking head videos. This method, called DiffTalk, leverages the capabilities of Latent Diffusion Models. It focuses on generating temporally coherent talking head videos by using audio signals, reference face images, and landmarks as conditions. This approach allows for the creation of personalized, synchronized talking videos without the need for additional fine-tuning, even for different identities. The paper also demonstrates the method's ability to be adapted for higher-resolution synthesis without significant computational cost. Extensive experiments validate the effectiveness of DiffTalk in synthesizing high-quality talking head videos for a wide range of identities.
-
-An overview of the DiffTalk is shown in the follwing figure.
-<img src="method.png" width="932" height="391">
-
-<br>
-The visualization results are shown in the follwing figure.
-<img src="result.png" width="587" height="492">
 
 
 ## Acknowledgement
