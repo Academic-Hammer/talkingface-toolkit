@@ -126,7 +126,7 @@ zipp==3.17.0
 
 #### 3.训练过程
 
-1)首先将https://drive.google.com/file/d/1OjFo6oRu-PIlZIl-6zPfnD_x4TW1iZ-3/view的文件下载下来放在项目中的dataset文件夹中
+1)首先将https://drive.google.com/file/d/1OjFo6oRu-PIlZIl-6zPfnD_x4TW1iZ-3/view 的文件下载下来放在项目中的dataset文件夹中
 
 2)运行talkingface/data/dataset下的preprocess文件：python preprocess.py
 
