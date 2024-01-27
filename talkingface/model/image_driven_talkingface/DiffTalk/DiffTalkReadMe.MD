@@ -88,7 +88,7 @@ I have already incorporated the model into this framework. You can directly init
 4. During inference, the network is also sensitive to the mask shape in z_T , where the mask needs to cover the mouth region completely and its shape cannot leak any
 lip shape information.
 
-## Pictures
+## Huanran & Zhangshuo's result
 For training, it requires 8 GPUs to train. We are impossible to train this, but we implement the trainer, and you can use our code to train it.
 For testing, its very easy to initialize the model:
 write some thing at the root of this project, just:
@@ -115,6 +115,7 @@ The visualization results are shown in the follwing figure.
 Here are 5 videos to show the effectiveness of the method:
 <br>①"This administration and this congress have governed with cruelty and have broken every promise they made to the American people.
 During the campaign we heard the president promised that he would keep jobs here at home buy and hire Americanand hold countries like China accountable."
+
 <br>②"Good for the economy I mean what we see is most likely of the ranking member Maxine Waters would become the chairman should the democrats take over. She has been leading the impeachment charge in the house. She is called for te harassment of the presidents' administration and members."
 <br>③"End to the other I talked to everybody that I can find folks waking their dog filling up their gas tank. I talked to them about what matters to them, what worries them and what congress should be doing to help."
 <br>④"Nations annual metting. First of all, thank you for your hardworking and advocacy on behalf of one of our state's greatest treasures. And that's our public lands."
