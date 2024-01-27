@@ -58,6 +58,8 @@ python test_model.py
 ```
 等待运行结束，结果会存放在`generated_data/`中
 
+在不运行的情况下，可以通过EmoStarGAN Demo.ipynb文件观察效果
+
 ## 成员分工
 
 -   刘廷汉：阅读源码和论文，配置环境，将源码迁移到talkingface-toolkit框架中，修改项目中的模型部分，编写并测试推理代码，共同完成文档生成。
