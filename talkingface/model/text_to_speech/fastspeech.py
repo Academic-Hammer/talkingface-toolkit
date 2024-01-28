@@ -141,6 +141,7 @@ class FastSpeech(AbstractTalkingFace):
             file_dict['generated_video'].append(generated_audio_path)
             real_audio_path=os.path.join(self.config['data_root'],'wavs',str(name)+'.wav')
             file_dict['real_video'].append(real_audio_path)
+            exit(0)
         return file_dict
 
     def get_WaveGlow(self):
