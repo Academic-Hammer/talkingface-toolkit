@@ -3,9 +3,9 @@ from talkingface.quick_start import run
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", "-m", type=str, default="BPR", help="name of models")
+    parser.add_argument("--model", "-m", type=str, default="evp", help="name of models")
     parser.add_argument(
-        "--dataset", "-d", type=str, default=None, help="name of datasets"
+        "--dataset", "-d", type=str, default="evpDataset", help="name of datasets"
     )
     parser.add_argument("--evaluate_model_file", type=str, default=None, help="The model file you want to evaluate")
     parser.add_argument("--config_files", type=str, default=None, help="config files")
