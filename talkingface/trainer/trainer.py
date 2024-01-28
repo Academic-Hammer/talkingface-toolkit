@@ -2,7 +2,6 @@ import os
 
 from logging import getLogger
 from time import time
-import dlib, json, subprocess
 import torch.nn.functional as F
 import glob
 import numpy as np
@@ -25,7 +24,6 @@ from talkingface.utils import(
     get_gpu_usage,
     WandbLogger
 )
-from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
 from talkingface.evaluator import Evaluator
 
 
@@ -554,4 +552,211 @@ class Wav2LipTrainer(Trainer):
         if losses_dict["sync_loss"] < .75:
             self.model.config["syncnet_wt"] = 0.01
         return average_loss_dict
-    
+
+
+class HyperLipsBaseTrainer(Trainer):
+    def __init__(self, config, model):
+        super(HyperLipsBaseTrainer, self).__init__(config, model)
+
+    def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
+        r"""Train the model in an epoch
+
+        Args:
+            train_data (DataLoader): The train data.
+            epoch_idx (int): The current epoch id.
+            loss_func (function): The loss function of :attr:`model`. If it is ``None``, the loss function will be
+                :attr:`self.model.calculate_loss`. Defaults to ``None``.
+            show_progress (bool): Show the progress of training epoch. Defaults to ``False``.
+
+        Returns:
+            the averaged loss of this epoch
+        """
+        self.model.train()
+
+        loss_func = loss_func or self.model.calculate_loss
+        total_loss_dict = {}
+        step = 0
+        iter_data = (
+            tqdm(
+                train_data,
+                total=len(train_data),
+                ncols=None,
+            )
+            if show_progress
+            else train_data
+        )
+
+        for batch_idx, interaction in enumerate(iter_data):
+            self.optimizer.zero_grad()
+            step += 1
+            losses_dict = loss_func(interaction)
+            loss = losses_dict["loss"]
+
+            for key, value in losses_dict.items():
+                if key in total_loss_dict:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] += value
+                    # 如果键已经在总和字典中，累加当前值
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] += value.item()
+                else:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] = value
+                    # 否则，将当前值添加到字典中
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] = value.item()
+            iter_data.set_description(set_color(f"train {epoch_idx} {losses_dict}", "pink"))
+
+            self._check_nan(loss)
+            loss.backward()
+            self.optimizer.step()
+        average_loss_dict = {}
+        for key, value in total_loss_dict.items():
+            average_loss_dict[key] = value / step
+
+        return average_loss_dict
+
+    def _valid_epoch(self, valid_data, loss_func=None, show_progress=False):
+        print('Valid'.format(self.eval_step))
+        self.model.eval()
+        total_loss_dict = {}
+        iter_data = (
+            tqdm(valid_data,
+                 total=len(valid_data),
+                 ncols=None,
+                 desc=set_color("Valid", "pink")
+                 )
+            if show_progress
+            else valid_data
+        )
+        step = 0
+        for batch_idx, batched_data in enumerate(iter_data):
+            step += 1
+            losses_dict = self.model.calculate_loss(batched_data, valid=True)
+            for key, value in losses_dict.items():
+                if key in total_loss_dict:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] += value
+                    # 如果键已经在总和字典中，累加当前值
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] += value.item()
+                else:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] = value
+                    # 否则，将当前值添加到字典中
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] = value.item()
+        average_loss_dict = {}
+        for key, value in total_loss_dict.items():
+            average_loss_dict[key] = value / step
+        if losses_dict["sync_loss"] < .75:
+            self.model.config["syncnet_wt"] = 0.01
+        return average_loss_dict
+
+
+class HyperLipsHRTrainer(Trainer):
+    def __init__(self, config, model):
+        super(HyperLipsHRTrainer, self).__init__(config, model)
+
+    def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
+        r"""Train the model in an epoch
+
+        Args:
+            train_data (DataLoader): The train data.
+            epoch_idx (int): The current epoch id.
+            loss_func (function): The loss function of :attr:`model`. If it is ``None``, the loss function will be
+                :attr:`self.model.calculate_loss`. Defaults to ``None``.
+            show_progress (bool): Show the progress of training epoch. Defaults to ``False``.
+
+        Returns:
+            the averaged loss of this epoch
+        """
+        self.model.train()
+
+        loss_func = loss_func or self.model.calculate_loss
+        total_loss_dict = {}
+        step = 0
+        iter_data = (
+            tqdm(
+                train_data,
+                total=len(train_data),
+                ncols=None,
+            )
+            if show_progress
+            else train_data
+        )
+
+        for batch_idx, interaction in enumerate(iter_data):
+            self.optimizer.zero_grad()
+            step += 1
+            losses_dict = loss_func(interaction)
+            loss = losses_dict["loss"]
+
+            for key, value in losses_dict.items():
+                if key in total_loss_dict:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] += value
+                    # 如果键已经在总和字典中，累加当前值
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] += value.item()
+                else:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] = value
+                    # 否则，将当前值添加到字典中
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] = value.item()
+            iter_data.set_description(set_color(f"train {epoch_idx} {losses_dict}", "pink"))
+
+            self._check_nan(loss)
+            loss.backward()
+            self.optimizer.step()
+        average_loss_dict = {}
+        for key, value in total_loss_dict.items():
+            average_loss_dict[key] = value / step
+
+        return average_loss_dict
+
+    def _valid_epoch(self, valid_data, loss_func=None, show_progress=False):
+        print('Valid'.format(self.eval_step))
+        self.model.eval()
+        total_loss_dict = {}
+        iter_data = (
+            tqdm(valid_data,
+                 total=len(valid_data),
+                 ncols=None,
+                 desc=set_color("Valid", "pink")
+                 )
+            if show_progress
+            else valid_data
+        )
+        step = 0
+        for batch_idx, batched_data in enumerate(iter_data):
+            step += 1
+            losses_dict = self.model.calculate_loss(batched_data, valid=True)
+            for key, value in losses_dict.items():
+                if key in total_loss_dict:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] += value
+                    # 如果键已经在总和字典中，累加当前值
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] += value.item()
+                else:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] = value
+                    # 否则，将当前值添加到字典中
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] = value.item()
+        average_loss_dict = {}
+        for key, value in total_loss_dict.items():
+            average_loss_dict[key] = value / step
+        # if losses_dict["sync_loss"] < .75:
+        #     self.model.config["syncnet_wt"] = 0.01
+        return average_loss_dict

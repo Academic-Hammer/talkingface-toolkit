@@ -5,7 +5,6 @@ from collections.abc import MutableMapping
 from logging import getLogger
 import os
 from torch.utils import data as data_utils
-from ray import tune
 
 from talkingface.config import Config
 
@@ -69,12 +68,10 @@ def run_talkingface(
     logger = getLogger()
     logger.info(sys.argv)
     logger.info(config)
-
     #data processing
     # print(not (os.listdir(config['preprocessed_root'])))
     if config['need_preprocess'] and (not (os.path.exists(config['preprocessed_root'])) or not (os.listdir(config['preprocessed_root']))):
         get_preprocess(config['dataset'])(config).run()
-
     train_dataset, val_dataset = create_dataset(config)
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=config["batch_size"], shuffle=True
@@ -92,7 +89,7 @@ def run_talkingface(
     # model training
     if config['train']:
         trainer.fit(train_data_loader, val_data_loader, saved=saved, show_progress=config["show_progress"])
-        # print(1)
+        print(1)
 
     if not config['train'] and evaluate_model_file is None:
         print("error: no model file to evaluate without training")

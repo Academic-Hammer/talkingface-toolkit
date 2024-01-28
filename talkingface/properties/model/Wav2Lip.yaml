@@ -6,7 +6,7 @@ syncnet_eval_interval: 10000
 syncnet_checkpoint_interval: 10000
 syncnet_T: 5
 syncnet_mel_step_size: 16
-syncnet_checkpoint_path: "checkpoints/wav2lip/lipsync_expert.pth"
+syncnet_checkpoint_path: "checkpoints/lipsync_expert.pth"
 
 # Data preprocessing for Wav2lip
 num_mels: 80
