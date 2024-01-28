@@ -114,7 +114,8 @@ class LJSpeechPreprocess:
         if not os.path.exists(out_dir):
             os.makedirs(out_dir, exist_ok=True)
         metadata = self.build_from_path(in_dir, out_dir)
-        self.write_metadata(metadata, out_dir)
+        #写数据切分用的
+        #self.write_metadata(metadata, out_dir)
         self.unzip_alignments()
 
     def unzip_alignments(self):
