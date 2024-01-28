@@ -63,6 +63,7 @@ def get_model(model_name):
         raise ValueError(
             "`model_name` [{}] is not the name of an existing model.".format(model_name)
         )
+    print(model_module,model_name)
     model_class = getattr(model_module, model_name)
     return model_class
 
@@ -435,6 +436,7 @@ def create_dataset(config):
     """
     model_name = config['model']
     dataset_file_name = model_name.lower()+'_dataset'
+    print(dataset_file_name)
     module_path = ".".join(["talkingface.data.dataset", dataset_file_name])
     if importlib.util.find_spec(module_path, __name__):
         dataset_module = importlib.import_module(module_path, __name__)
@@ -443,7 +445,7 @@ def create_dataset(config):
             "`dataset_file_name` [{}] is not the name of an existing dataset.".format(dataset_file_name)
         )
     dataset_class = getattr(dataset_module, model_name+'Dataset')
-
+    print(config['train_filelist'],"hahahha")
     return dataset_class(config, config['train_filelist']), dataset_class(config, config['val_filelist'])
 
 
