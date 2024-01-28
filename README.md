@@ -49,6 +49,7 @@
    &emsp;&emsp;2.在运行代码时出现爆显存的问题，如下图所示：
 
    ![img_1.png](img_1.png)
+   
    &emsp;&emsp;通过调小原代码所提供的batch_size参数以及在一个epoch训练结束后添加清除显存代码解决该问题：
    
    &emsp;&emsp;`gc.collect()`
