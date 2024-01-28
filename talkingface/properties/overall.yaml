@@ -1,3 +1,38 @@
+# Enviroment Settings
+gpu_id: '3, 4, 5'                     # (str) The id of GPU device(s).
+worker: 0                       # (int) The number of workers processing the data.
+use_gpu: True                   # (bool) Whether or not to use GPU.
+seed: 2023                      # (int) Random seed.
+checkpoint_dir: 'saved'         # (str) The path to save checkpoint file.
+show_progress: True             # (bool) Whether or not to show the progress bar of every epoch. 
+log_wandb: False                # (bool) Whether or not to use Weights & Biases(W&B).
+shuffle: True                   # (bool) Whether or not to shuffle the training data before each epoch.
+device: 'cuda'
+reproducibility: True           # (bool) Whether or not to make results reproducible.
+
+# Training Settings
+epochs: 1                     # (int) The number of training epochs.
+train_batch_size: 2048          # (int) The training batch size.
+learner: adam                   # (str) The name of used optimizer.
+learning_rate: 0.0001            # (float) Learning rate.
+eval_step: 1                    # (int) The number of training epochs before an evaluation on the valid dataset.
+stopping_step: 10               # (int) The threshold for validation-based early stopping.
+weight_decay: 0.0               # (float) The weight decay value (L2 penalty) for optimizers.
+saved: True
+resume: False
+train: True
+
+# Evaluation Settings
+metrics: ["LSE", "SSIM"]
+evaluate_batch_size: 50          # (int) The evaluation batch size.
+lse_checkpoint_path: 'checkpoints/LSE/syncnet_v2.model'
+temp_dir: 'results/temp'
+lse_reference_dir: 'lse'
+valid_metric_bigger: False
+# (bool) Whether to take a bigger valid metric value as a better result.
+
+
+
 # Syncnet
 syncnet_wt: 0.03 # (int) is initially zero, will be set automatically to 0.03 later.Leads to faster convergence.
 syncnet_batch_size: 64 # (int) batch_size for syncnet train
@@ -53,3 +88,14 @@ rotate: False
 nosmooth: False
 wav2lip_batch_size: 128
 vshift: 15
+
+train_filelist: 'train' # 当前数据集的数据划分文件 train
+test_filelist: 'test' # 当前数据集的数据划分文件 test
+val_filelist: 'val' # 当前数据集的数据划分文件 val
+
+data_root: 'dataset/lrs2/data/main' # 当前数据集的数据根目录
+preprocessed_root: 'dataset/lrs2/preprocessed_data' # 当前数据集的预处理数据根目录
+
+need_preprocess: True # 数据集是否需要预处理，如抽帧、抽音频等
+
+preprocess_batch_size: 32
