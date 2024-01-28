@@ -1,0 +1,1 @@
+Don't forget to download pretrained WaveGlow model and place it into the waveglow folder.
