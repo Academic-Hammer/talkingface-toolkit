@@ -13,7 +13,7 @@ from scipy import signal
 from scipy.io import wavfile
 
 
-class lrs2Preprocess:
+class evpDatasetPreprocess:
     def __init__(self, config):
         self.config = config
         self.fa = [face_detection.FaceAlignment(face_detection.LandmarksType._2D, flip_input=False, 
