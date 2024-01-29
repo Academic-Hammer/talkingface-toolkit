@@ -85,7 +85,7 @@ class AudioVisualDataset(BaseDataset):
         self.isTrain = self.opt['Train']
 
         return
-        #日后再来，没搞明白下面
+        # 以下不需要
         self.state = opt.dataset_type
         self.dataset_name = opt.dataset_names
         self.target_length = opt.time_frame_length
