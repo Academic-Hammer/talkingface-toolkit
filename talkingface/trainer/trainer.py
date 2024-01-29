@@ -2,9 +2,7 @@ import os
 
 from logging import getLogger
 from time import time
-import dlib, json, subprocess
-import torch.nn.functional as F
-import glob
+
 import numpy as np
 import torch
 import torch.optim as optim
@@ -13,6 +11,9 @@ from tqdm import tqdm
 import torch.cuda.amp as amp
 from torch import nn
 from pathlib import Path
+from utils import utils
+from utils.glowTTS_utils import audio_processing
+from talkingface.utils.glowTTS_utils import commons
 
 from talkingface.utils import(
     ensure_dir,
@@ -25,7 +26,6 @@ from talkingface.utils import(
     get_gpu_usage,
     WandbLogger
 )
-from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
 from talkingface.evaluator import Evaluator
 
 
@@ -448,9 +448,9 @@ class Trainer(AbstractTrainer):
 
 
 
-class Wav2LipTrainer(Trainer):
+class GlowTTSTrainer(Trainer):
     def __init__(self, config, model):
-        super(Wav2LipTrainer, self).__init__(config, model)
+        super(GlowTTSTrainer, self).__init__(config, model)
 
     def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
         r"""Train the model in an epoch
@@ -466,7 +466,6 @@ class Wav2LipTrainer(Trainer):
             the averaged loss of this epoch
         """
         self.model.train()
-
 
 
         loss_func = loss_func or self.model.calculate_loss

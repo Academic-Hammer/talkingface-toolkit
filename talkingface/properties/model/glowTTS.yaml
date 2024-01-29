@@ -1,0 +1,36 @@
+hidden_channels : 192 
+filter_channels : 768 
+filter_channels_dp : 256 
+kernel_size : 3 
+p_dropout : 0.1 
+n_blocks_dec : 12 
+n_layers_enc : 6 
+n_heads : 2 
+p_dropout_dec : 0.05 
+dilation_rate : 1 
+kernel_size_dec : 5 
+n_block_layers : 4 
+n_sqz : 2 
+prenet : true 
+mean_only : true 
+hidden_channels_enc : 192 
+hidden_channels_dec : 192 
+window_size : 4
+
+checkpoint_sub_dir:  /glowTTS  # 和overall.yaml里checkpoint_dir拼起来作为最终目录
+
+temp_sub_dir:  /glowTTS  # 和overall.yaml里temp_dir拼起来作为最终目录
+
+
+use_cuda : true 
+log_interval : 20 
+seed : 1234 
+epochs : 10000 
+learning_rate : 1e0 
+betas : [0.9,  0.98] 
+eps : 1e-9 
+warmup_steps : 4000 
+scheduler :  noam  
+batch_size : 32 
+ddi : true 
+fp16_run : true

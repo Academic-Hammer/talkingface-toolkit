@@ -1,0 +1,22 @@
+train_filelist: 'dataset/LJSpeech/filelist/list.txt' 
+val_filelist: 'dataset/LJSpeech/filelist/list_val.txt' 
+
+data_root: 'dataset/LJSpeech/data' # 当前数据集的数据根目录
+# preprocessed_root: 'dataset/lrs2/preprocessed_data' # 当前数据集的预处理数据根目录
+
+need_preprocess: false # 数据集是否需要预处理，如抽帧、抽音频等
+
+# preprocess_batch_size: 32
+
+load_mel_from_disk: false
+text_cleaners : ["english_cleaners"]
+max_wav_value: 32768.0
+sampling_rate: 22050
+filter_length: 1024
+hop_length: 256
+win_length: 1024
+n_mel_channels: 80
+mel_fmin: 0.0
+mel_fmax: 8000.0
+add_noise: true
+cmudict_path: 'talkingface.utils.glowTTS_utils.data/cmu_dictionary'

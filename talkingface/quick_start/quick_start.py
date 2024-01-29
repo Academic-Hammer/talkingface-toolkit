@@ -76,11 +76,16 @@ def run_talkingface(
         get_preprocess(config['dataset'])(config).run()
 
     train_dataset, val_dataset = create_dataset(config)
+    
+    from  talkingface.data.dataset.glowTTS_utils import TextMelCollate
+    collate_fn = TextMelCollate() if config["model"] == "glowTTS" else NONE
+    
     train_data_loader = data_utils.DataLoader(
-        train_dataset, batch_size=config["batch_size"], shuffle=True
+        train_dataset, batch_size=config["batch_size"], shuffle=True, collate_fn=collate_fn,
     )
     val_data_loader = data_utils.DataLoader(
-        val_dataset, batch_size=config["batch_size"], shuffle=False
+        val_dataset, batch_size=config["batch_size"], shuffle=True, collate_fn=collate_fn,
+
     )
 
     # load model
