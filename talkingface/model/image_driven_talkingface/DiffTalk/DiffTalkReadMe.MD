@@ -125,9 +125,9 @@ During the campaign we heard the president promised that he would keep jobs here
 <br>③"End to the other I talked to everybody that I can find folks waking their dog filling up their gas tank. I talked to them about what matters to them, what worries them and what congress should be doing to help."
 ![End to the other I talked to everybody that I can find folks waking their dog filling up their gas tank. I talked to them about what matters to them, what worries them and what congress should be doing to help.](https://github.com/huanranchen/talkingface-toolkit/blob/main/talkingface/model/image_driven_talkingface/DiffTalk/our_demos/3.gif)
 <br>④"Nations annual metting. First of all, thank you for your hardworking and advocacy on behalf of one of our state's greatest treasures. And that's our public lands."
+
+
 ![Nations annual metting. First of all, thank you for your hardworking and advocacy on behalf of one of our state's greatest treasures. And that's our public lands.](https://github.com/huanranchen/talkingface-toolkit/blob/main/talkingface/model/image_driven_talkingface/DiffTalk/our_demos/4.gif)
-
-
 <br>⑤"Ninety days to get assad out of that country so that we can stabilise it and then we need to do the work of bringing in special forces. If we would have kept that base in Iraq that we should have kept when the president  couldn't get the status of forces agreement signed. I think that that would have been a big help. Now that there's new government in Iraq, I think we should revisit that and see if we can get."
 ![Ninety days to get assad out of that country so that we can stabilise it and then we need to do the work of bringing in special forces. If we would have kept that base in Iraq that we should have kept when the president  couldn't get the status of forces agreement signed. I think that that would have been a big help. Now that there's new government in Iraq, I think we should revisit that and see if we can get.](https://github.com/huanranchen/talkingface-toolkit/blob/main/talkingface/model/image_driven_talkingface/DiffTalk/our_demos/5.gif)
 
