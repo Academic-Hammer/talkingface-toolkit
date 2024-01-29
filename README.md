@@ -1,9 +1,9 @@
 ## Glow-TTS: A Generative Flow for Text-to-Speech via Monotonic Alignment Search
-论文链接：https://arxiv.org/abs/2005.11129
-仓库链接：https://github.com/jaywalnut310/glow-tts?tab=readme-ov-file
+论文链接：https://arxiv.org/abs/2005.11129  
+仓库链接：https://github.com/jaywalnut310/glow-tts?tab=readme-ov-file  
 
 ## 完成功能
-&ensp;&ensp;完成了论文中的模型结构，并入talkingface框架中，实现了训练功能
+&ensp;&ensp;完成了论文中的模型结构，并入talkingface框架中，实现了训练功能  
 
 
 ## 最终实现的训练
@@ -11,7 +11,7 @@
 &ensp;&ensp;数据集下载链接：https://keithito.com/LJ-Speech-Dataset/
 
 ## 使用环境
-&ensp;&ensp;因为原模型使用的依赖与talkingface框架中的依赖有冲突，在运行时存在问题，我们在构建时使用了原模型的依赖，详细可见environment.yml文件
+&ensp;&ensp;因为原模型使用的依赖与talkingface框架中的依赖有冲突，在运行时存在问题，我们在构建时使用了原模型的依赖，详细可见environment.yml以及requirements.txt文件
    - Python3.6.9
    - pytorch1.2.0
    - cython0.29.12
@@ -35,20 +35,22 @@
    `ln -s /path/to/LJSpeech-1.1/wavs DUMMY`
    
    &emsp;&emsp;b) 构建单调对齐搜索代码（Cython）：
-   `cd monotonic_align; python setup.py build_ext --inplace`
+   `cd monotonic_align; python setup.py build_ext --inplace`  
+   &emsp;&emsp;此外，还需要在utils文件夹中的WaveGlow文件夹中下载预训练的WaveGlow模型，链接详见文件夹中md文件
    
    &emsp;&emsp;c) 若本机未搭建gpu环境或独显显存较小，则可以在代码中去掉与cuda相关的内容，同样可以完成训练，但速度较慢。
 ## 训练
    &emsp;&emsp;完成以上工作后运行训练脚本：
    ` python run_talkingface.py --model=glowTTS -–dataset=LJSpeech`
 ## 训练截图
-   &emsp;&emsp;![img.png](img.png)
+![Alt text](README_IMG/1.png)  
+![Alt text](README_IMG/2.png)
 ## 遇到的问题与解决
    &emsp;&emsp;1.原代码中使用apex库加速混合精度训练，但由于该库的配置问题无法在本机使用，故更改为仅使用torch.nn中包含的DistributedDataParallel方法。
    
    &emsp;&emsp;2.在运行代码时出现爆显存的问题，如下图所示：
 
-   ![img_1.png](img_1.png)
+   ![img_1.png](README_IMG/3.png)
    
    &emsp;&emsp;通过调小原代码所提供的batch_size参数以及在一个epoch训练结束后添加清除显存代码解决该问题：
    

@@ -1,1 +1,1 @@
-Don't forget to download pretrained WaveGlow model and place it into the waveglow folder.
+链接：https://github.com/NVIDIA/waveglow
