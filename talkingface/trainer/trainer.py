@@ -608,7 +608,8 @@ class VITSTrainer(Trainer):
                         else:
                             losses_dict[key] = value.item()
                             total_loss_dict[key] = value.item()
-            iter_data.set_description(set_color(f"train {epoch_idx} {g_losses_dict} {d_losses_dict}", "pink"))
+            # iter_data.set_description(set_color(f"epoch: {epoch_idx} {g_losses_dict} {d_losses_dict}", "pink"))  # 太长了，显示不完
+            iter_data.set_description(set_color(f"epoch: {epoch_idx}, g: {loss_gen_all}, d: {loss_disc_all}", "pink"))
 
             # self._check_nan(loss)
             # loss.backward()

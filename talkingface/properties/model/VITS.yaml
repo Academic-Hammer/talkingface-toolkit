@@ -26,7 +26,7 @@ log_interval: 200  # 生成日志的间隔
 eval_interval: 1000  # 模型保存和测试的间隔
 betas: [0.8, 0.99]
 eps: 1e-9
-batch_size: 64
+batch_size: 16  # vits模型真正决定batch_size的地方，设成16需要的内存大概是9GB，设成32大概是15GB
 fp16_run: true
 lr_decay: 0.999875
 segment_size: 8192
