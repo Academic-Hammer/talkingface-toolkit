@@ -1,0 +1,70 @@
+# Enviroment Settings
+gpu_id: '3'                     # The id of GPU device(s).
+worker: 0                             # The number of workers processing the data.
+use_gpu: True                         # Whether or not to use GPU.
+seed: 2023                            # Random seed.
+checkpoint_dir: 'saved'               # The path to save checkpoint file.
+show_progress: True                   # Whether or not to show the progress bar of every epoch. 
+log_wandb: False                      # Whether or not to use Weights & Biases(W&B).
+shuffle: True                         # Whether or not to shuffle the training data before each epoch.
+device: 'cuda'
+reproducibility: True                 # Whether or not to make results reproducible.
+
+# Training Settings
+epochs: 300                           # The number of training epochs.
+train_batch_size: 16                  # The training batch size.
+learner: adam                         # The name of used optimizer.
+learning_rate: 0.0001                 # Learning rate.
+eval_step: 1                          # The number of training epochs before an evaluation on the valid dataset.
+stopping_step: 10                     # The threshold for validation-based early stopping.
+weight_decay: 0.0                     # The weight decay value (L2 penalty) for optimizers.
+saved: True
+resume: True
+train: True
+
+# Additional Model Settings
+img_size: 96
+fps: 25
+num_workers: 16
+checkpoint_interval: 10000
+eval_interval: 3000
+save_optimizer_state: True
+syncnet_wt: 0.0
+syncnet_batch_size: 128
+syncnet_lr: 0.0001
+syncnet_eval_interval: 500
+syncnet_checkpoint_interval: 1000
+emo_wt: 0.01
+pl_wt: 0.01
+disc_wt: 0.07
+disc_initial_learning_rate: 0.0001
+beta_1: 0.999
+beta_2: 0.999
+
+# Audio Preprocessing
+num_mels: 80
+rescale: True
+rescaling_max: 0.9
+use_lws: False
+n_fft: 800
+hop_size: 200
+win_size: 800
+sample_rate: 16000
+signal_normalization: True
+allow_clipping_in_normalization: True
+symmetric_mels: True
+max_abs_value: 4.0
+preemphasize: True
+preemphasis: 0.97
+min_level_db: -100
+ref_level_db: 20
+fmin: 55
+fmax: 7600
+
+# Evaluation Settings
+metrics: ["LSE", "SSIM"]
+evaluate_batch_size: 50              # The evaluation batch size.
+lse_checkpoint_path: 'checkpoints/LSE/syncnet_v2.model'
+temp_dir: 'results/temp'
+lse_reference_dir: 'lse'
+valid_metric_bigger: False           # Whether to take a bigger valid metric va

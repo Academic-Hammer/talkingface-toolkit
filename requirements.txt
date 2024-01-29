@@ -40,7 +40,6 @@ joblib==1.3.2
 jsonschema==4.19.2
 jsonschema-specifications==2023.7.1
 kiwisolver==1.4.5
-kornia==0.5.5
 lazy_loader==0.3
 librosa==0.10.1
 llvmlite==0.37.0
