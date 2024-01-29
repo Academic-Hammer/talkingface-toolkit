@@ -1,0 +1,7 @@
+arch: mobilenet # MobileNet V1
+widen_factor: 1.0
+checkpoint_fp: checkpoints/EAMM/mb1_120x120.pth
+bfm_fp: checkpoints/EAMM/bfm_noneck_v3.pkl # or configs/bfm_noneck_v3_slim.pkl
+size: 120
+num_params: 62
+param_mean_std_fp: checkpoints/EAMM/param_mean_std_62d_120x120.pkl

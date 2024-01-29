@@ -1,0 +1,24 @@
+# Prepocessed
+data_root: 'dataset/mead/data'
+preprocessed_root: 'dataset/mead/_data'
+_preprocessed_root: 'dataset/mead/preprocessed_data'
+need_preprocess: True
+config_root: 'talkingface/properties/model/EAMM'
+
+# Train
+mode: "train_part1" # "train_part1", "train_part1_fine_tune", "train_part2"
+checkpoint_sub_dir: "/eamm" # 和overall.yaml里checkpoint_dir拼起来作为最终目录
+temp_sub_dir: "/eamm" # 和overall.yaml里temp_dir拼起来作为最终目录
+batch_size: 16
+ngpu: 1
+epochs: 5
+
+audio_checkpoint: 'checkpoints/EAMM/1-6000.pth.tar'
+checkpoint: 'checkpoints/EAMM/124_52000.pth.tar'
+emo_checkpoint: 'checkpoints/EAMM/5-3000.pth.tar'
+device_ids: [0]
+verbose: False
+use_gpu: False
+device: 'cpu'
+gpu_id: '0'
+train: False

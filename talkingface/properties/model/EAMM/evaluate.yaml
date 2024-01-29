@@ -1,0 +1,57 @@
+cpu: True
+config: 'talkingface/properties/model/EAMM/MEAD_emo_video_aug_delta_4_crop_random_crop.yaml'
+audio_checkpoint: 'checkpoints/EAMM/1-6000.pth.tar'
+checkpoint: 'checkpoints/EAMM/124_52000.pth.tar'
+emo_checkpoint: 'checkpoints/EAMM/5-3000.pth.tar'
+
+source_image: 'dataset/mead/test/image/21.png'
+driving_video: 'dataset/mead/test/video/disgusted.mp4'
+in_file: 'dataset/mead/test/audio/sample1.mov'
+pose_file: 'dataset/mead/test/pose/21.npy'
+pose_given: 'dataset/mead/test/pose_long/0zn70Ak8lRc_Daniel_Auteuil_0zn70Ak8lRc_0002.npy'
+emotion: 'disgusted' # 'angry', 'contempt','disgusted','fear','happy','neutral','sad','surprised'
+
+
+result_path: 'saved/eamm/output/'
+relative: False
+adapt_scale: False
+
+
+kp_loss: 0
+smooth_pose: True
+pose_long: False
+weight: 0
+add_emo: False
+check_add: False
+type: "linear_3"
+
+
+
+# model params
+
+model_common_num_kp: 10
+model_common_num_channels: 3
+model_common_estimate_jacobian: True
+model_audio_num_kp: 10
+model_audio_num_channels : 3
+model_audio_num_channels_a : 3
+model_audio_estimate_jacobian: True
+model_kp_detector_temperature: 0.1
+model_kp_detector_block_expansion: 32
+model_kp_detector_max_features: 1024
+model_kp_detector_scale_factor: 0.25
+model_kp_detector_num_blocks: 5
+model_generator_block_expansion: 64
+model_generator_max_features: 512
+model_generator_num_down_blocks: 2
+model_generator_num_bottleneck_blocks: 6
+model_generator_estimate_occlusion_map: True
+model_generator_dense_motion_block_expansion: 64
+model_generator_dense_motion_max_features: 1024
+model_generator_dense_motion_num_blocks: 5
+model_generator_dense_motion_scale_factor: 0.25
+model_discriminator_scales: [1]
+model_discriminator_block_expansion: 32
+model_discriminator_max_features: 512
+model_discriminator_num_blocks: 4
+model_discriminator_sn: True

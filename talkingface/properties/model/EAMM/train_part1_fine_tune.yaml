@@ -1,0 +1,69 @@
+train_filelist: True
+val_filelist: False
+
+dataset_name: LRW
+dataset_root_dir: dataset/LRW/
+dataset_frame_shape: [256, 256, 3]
+dataset_id_sampling: False
+dataset_augmentation_flip_horizontal_flip: False
+dataset_augmentation_flip_time_flip: False
+dataset_augmentation_jitter_brightness: 0.1
+dataset_augmentation_jitter_contrast: 0.1
+dataset_augmentation_jitter_saturation: 0.1
+dataset_augmentation_jitter_hue: 0.1
+
+model_common_num_kp: 10
+model_common_num_channels: 3
+model_common_estimate_jacobian: True
+model_audio_num_kp: 10
+model_audio_num_channels : 3
+model_audio_num_channels_a : 3
+model_audio_estimate_jacobian: True
+model_kp_detector_temperature: 0.1
+model_kp_detector_block_expansion: 32
+model_kp_detector_max_features: 1024
+model_kp_detector_scale_factor: 0.25
+model_kp_detector_num_blocks: 5
+model_generator_block_expansion: 64
+model_generator_max_features: 512
+model_generator_num_down_blocks: 2
+model_generator_num_bottleneck_blocks: 6
+model_generator_estimate_occlusion_map: True
+model_generator_dense_motion_block_expansion: 64
+model_generator_dense_motion_max_features: 1024
+model_generator_dense_motion_num_blocks: 5
+model_generator_dense_motion_scale_factor: 0.25
+model_discriminator_scales: [1]
+model_discriminator_block_expansion: 32
+model_discriminator_max_features: 512
+model_discriminator_num_blocks: 4
+model_discriminator_sn: True
+
+train_jaco_net: cnn
+train_ldmark: fake
+train_generator: audio
+train_num_epochs: 300
+train_num_repeats: 1
+train_epoch_milestones: [60, 90]
+train_lr_generator: 2.0e-4
+train_lr_discriminator: 2.0e-4
+train_lr_kp_detector: 2.0e-4
+train_lr_audio_feature: 2.0e-4
+train_batch_size: 6
+train_scales: [1, 0.5, 0.25, 0.125]
+train_checkpoint_freq: 1
+train_transform_sigma_affine: 0.05
+train_transform_sigma_tps: 0.005
+train_transform_points_tps: 5
+train_loss_weights_generator_gan: 0
+train_loss_weights_discriminator_gan: 0
+train_loss_weights_feature_matching: [10, 10, 10, 10]
+train_loss_weights_perceptual: [0.1, 0.1, 0.1, 0.1, 0.1]
+train_loss_weights_equivariance_value: 0
+train_loss_weights_equivariance_jacobian: 0
+train_loss_weights_audio: 10
+
+visualizer_kp_size: 5
+visualizer_draw_border: True
+visualizer_colormap: 'gist_rainbow'
+
