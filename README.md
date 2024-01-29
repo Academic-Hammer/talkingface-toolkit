@@ -1,210 +1,172 @@
-# talkingface-toolkit
-## 框架整体介绍
-### checkpoints
-主要保存的是训练和评估模型所需要的额外的预训练模型，在对应文件夹的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/checkpoints/README.md)有更详细的介绍
+# Variational Inference with adversarial learning for end-to-end Text-to-Speech (VITS)
 
-### datset
-存放数据集以及数据集预处理之后的数据，详细内容见dataset里的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/dataset/README.md)
+原论文链接：https://arxiv.org/abs/2106.06103
 
-### saved
-存放训练过程中保存的模型checkpoint, 训练过程中保存模型时自动创建
+原仓库链接：https://github.com/jaywalnut310/vits
 
-### talkingface
-主要功能模块，包括所有核心代码
+## 完成的功能
 
-#### config
-根据模型和数据集名称自动生成所有模型、数据集、训练、评估等相关的配置信息
-```
-config/
+1. 对VITS的训练整合到talkingface的框架中
 
-├── configurator.py
+2. 实现训练功能
 
-```
-#### data
-- dataprocess：模型特有的数据处理代码，（可以是对方仓库自己实现的音频特征提取、推理时的数据处理）。如果实现的模型有这个需求，就要建立一对应的文件
-- dataset：每个模型都要重载`torch.utils.data.Dataset` 用于加载数据。每个模型都要有一个`model_name+'_dataset.py'`文件. `__getitem__()`方法的返回值应处理成字典类型的数据。 <span style="color:red">(核心部分)</span>
-```
-data/
+3. 推理部分通过使用MoeGoe实现
 
-├── dataprocess
 
-| ├── wav2lip_process.py
 
-| ├── xxxx_process.py
+## 最终实现的训练
 
-├── dataset
+目前实现的是单人说话，使用的是LJSpeech英文演讲数据集，因为训练需要的时间过久，而且将代码放到talkingface，缩减了一些训练加速相关的代码，移除了部分多gpu分布式训练相关代码，因而训练速度极慢……
 
-| ├── wav2lip_dataset.py
+使用当前的代码，在windows笔记本上运行了半个小时1个epoch都没有结束……
 
-| ├── xxx_dataset.py
-```
+另外，本代码已经经过linux运行验证，并不会出现移植后训练代码错误的情况，部署具有可靠性。
 
-#### evaluate
-主要涉及模型评估的代码
-LSE metric 需要的数据是生成的视频列表
-SSIM metric 需要的数据是生成的视频和真实的视频列表
 
-#### model
-实现的模型的网络和对应的方法 <span style="color:red">（核心部分）</span>
 
-主要分三类：
-- audio-driven (音频驱动)
-- image-driven （图像驱动）
-- nerf-based （基于神经辐射场的方法）
+### 如何在这里进行训练：
 
-```
-model/
+#### 1. 创建虚拟环境
 
-├── audio_driven_talkingface
-
-| ├── wav2lip.py
-
-├── image_driven_talkingface
-
-| ├── xxxx.py
-
-├── nerf_based_talkingface
-
-| ├── xxxx.py
-
-├── abstract_talkingface.py
-
-```
-
-#### properties
-保存默认配置文件，包括：
-- 数据集配置文件
-- 模型配置文件
-- 通用配置文件
-
-需要根据对应模型和数据集增加对应的配置文件，通用配置文件`overall.yaml`一般不做修改
-```
-properties/
-
-├── dataset
-
-| ├── xxx.yaml
-
-├── model
-
-| ├── xxx.yaml
-
-├── overall.yaml
-
-```
-
-#### quick_start
-通用的启动文件，根据传入参数自动配置数据集和模型，然后训练和评估（一般不需要修改）
-```
-quick_start/
-
-├── quick_start.py
-
-```
-
-#### trainer
-训练、评估函数的主类。在trainer中，如果可以使用基类`Trainer`实现所有功能，则不需要写一个新的。如果模型训练有一些特有部分，则需要重载`Trainer`。需要重载部分可能主要集中于: `_train_epoch()`, `_valid_epoch()`。 重载的`Trainer`应该命名为：`{model_name}Trainer`
-```
-trainer/
-
-├── trainer.py
-
-```
-
-#### utils
-公用的工具类，包括`s3fd`人脸检测，视频抽帧、视频抽音频方法。还包括根据参数配置找对应的模型类、数据类等方法。
-一般不需要修改，但可以适当添加一些必须的且相对普遍的数据处理文件。
-
-## 使用方法
-### 环境要求
-- `python=3.8`
-- `torch==1.13.1+cu116`（gpu版，若设备不支持cuda可以使用cpu版）
-- `numpy==1.20.3`
-- `librosa==0.10.1`
-
-尽量保证上面几个包的版本一致
-
-提供了两种配置其他环境的方法：
-```
-pip install -r requirements.txt
-
-or
-
-conda env create -f environment.yml
-```
-
-建议使用conda虚拟环境！！！
-
-### 训练和评估
+首先创建虚拟环境：
 
 ```bash
-python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx)
+conda create -n vits_linux python=3.7 -y
+conda activate vits_linux
+
+# PyTorch 1.13.1
+# CUDA 11.6
+pip install torch==1.13.1+cu116 torchvision==0.14.1+cu116 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu116
+
+pip install librosa==0.8.0
+
+pip install cython
+
+pip install pyyaml
+pip install colorlog
+pip install pandas
+pip install tensorboard
+pip install texttable
+pip install colorama
+pip install tqdm
+pip install opencv-python
+pip install jamo
+pip install ko_pron
+pip install pypinyin
+pip install jieba
+pip install cn2an
+pip install indic_transliteration
+pip install num_thai
+pip install opencc
+pip install python_speech_features
+pip install scikit-image
 ```
 
-### 权重文件
+上面的流程在linux下成功运行，遵守上面的安装步骤应该可以成功运行本代码。
 
-- LSE评估需要的权重: syncnet_v2.model [百度网盘下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
-- wav2lip需要的lip expert 权重：lipsync_expert.pth [百度网下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
+如果没有成功运行本代码，大部分的错误应当是缺少某些库，可以直接使用pip install进行下载安装。
 
-## 可选论文：
-### Aduio_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| MakeItTalk | [paper](https://arxiv.org/abs/2004.12992) | [code](https://github.com/yzhou359/MakeItTalk) |
-| MEAD | [paper](https://wywu.github.io/projects/MEAD/support/MEAD.pdf) | [code](https://github.com/uniBruce/Mead) |
-| RhythmicHead | [paper](https://arxiv.org/pdf/2007.08547v1.pdf) | [code](https://github.com/lelechen63/Talking-head-Generation-with-Rhythmic-Head-Motion) |
-| PC-AVS | [paper](https://arxiv.org/abs/2104.11116) | [code](https://github.com/Hangz-nju-cuhk/Talking-Face_PC-AVS) |
-| EVP | [paper](https://openaccess.thecvf.com/content/CVPR2021/papers/Ji_Audio-Driven_Emotional_Video_Portraits_CVPR_2021_paper.pdf) | [code](https://github.com/jixinya/EVP) |
-| LSP | [paper](https://arxiv.org/abs/2109.10595) | [code](https://github.com/YuanxunLu/LiveSpeechPortraits) |
-| EAMM | [paper](https://arxiv.org/pdf/2205.15278.pdf) | [code](https://github.com/jixinya/EAMM/) |
-| DiffTalk | [paper](https://arxiv.org/abs/2301.03786) | [code](https://github.com/sstzal/DiffTalk) |
-| TalkLip | [paper](https://arxiv.org/pdf/2303.17480.pdf) | [code](https://github.com/Sxjdwang/TalkLip) |
-| EmoGen | [paper](https://arxiv.org/pdf/2303.11548.pdf) | [code](https://github.com/sahilg06/EmoGen) |
-| SadTalker | [paper](https://arxiv.org/abs/2211.12194) | [code](https://github.com/OpenTalker/SadTalker) |
-| HyperLips | [paper](https://arxiv.org/abs/2310.05720) | [code](https://github.com/semchan/HyperLips) |
-| PHADTF | [paper](http://arxiv.org/abs/2002.10137) | [code](https://github.com/yiranran/Audio-driven-TalkingFace-HeadPose) |
-| VideoReTalking | [paper](https://arxiv.org/abs/2211.14758) | [code](https://github.com/OpenTalker/video-retalking#videoretalking--audio-based-lip-synchronization-for-talking-head-video-editing-in-the-wild-)
-|                                 |
+除了上面的安装环境方式，还可以使用下面的命令直接安装：
+
+* 假如是linux：
+
+  ```bash
+  conda create -n vits_linux python=3.7 -y
+  conda activate vits_linux
+  pip install -r requirements_vits_linux.txt
+  ```
+
+* 假如是windows：
+
+  ```bash
+  conda env create -f environment_vits_windows.yml
+  ```
 
 
 
-### Image_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| PIRenderer | [paper](https://arxiv.org/pdf/2109.08379.pdf) | [code](https://github.com/RenYurui/PIRender) |
-| StyleHEAT | [paper](https://arxiv.org/pdf/2203.04036.pdf) | [code](https://github.com/OpenTalker/StyleHEAT) |
-| MetaPortrait | [paper](https://arxiv.org/abs/2212.08062) | [code](https://github.com/Meta-Portrait/MetaPortrait) |
-|                                 |
-### Nerf-based talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| AD-NeRF | [paper](https://arxiv.org/abs/2103.11078) | [code](https://github.com/YudongGuo/AD-NeRF) |
-| GeneFace | [paper](https://arxiv.org/abs/2301.13430) | [code](https://github.com/yerfor/GeneFace) |
-| DFRF | [paper](https://arxiv.org/abs/2207.11770) | [code](https://github.com/sstzal/DFRF) |
-|                                 |
-### text_to_speech
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| VITS | [paper](https://arxiv.org/abs/2106.06103) | [code](https://github.com/jaywalnut310/vits) |
-| Glow TTS | [paper](https://arxiv.org/abs/2005.11129) | [code](https://github.com/jaywalnut310/glow-tts) |
-| FastSpeech2 | [paper](https://arxiv.org/abs/2006.04558v1) | [code](https://github.com/ming024/FastSpeech2) |
-| StyleTTS2 | [paper](https://arxiv.org/abs/2306.07691) | [code](https://github.com/yl4579/StyleTTS2) |
-| Grad-TTS | [paper](https://arxiv.org/abs/2105.06337) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/Grad-TTS) | 
-| FastSpeech | [paper](https://arxiv.org/abs/1905.09263) | [code](https://github.com/xcmyz/FastSpeech) |
-|                                 |
-### voice_conversion
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| StarGAN-VC | [paper](http://www.kecl.ntt.co.jp/people/kameoka.hirokazu/Demos/stargan-vc2/index.html) | [code](https://github.com/kamepong/StarGAN-VC) |
-| Emo-StarGAN | [paper](https://www.researchgate.net/publication/373161292_Emo-StarGAN_A_Semi-Supervised_Any-to-Many_Non-Parallel_Emotion-Preserving_Voice_Conversion) | [code](https://github.com/suhitaghosh10/emo-stargan) |
-| adaptive-VC | [paper](https://arxiv.org/abs/1904.05742) | [code](https://github.com/jjery2243542/adaptive_voice_conversion) |
-| DiffVC | [paper](https://arxiv.org/abs/2109.13821) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/DiffVC) |
-| Assem-VC | [paper](https://arxiv.org/abs/2104.00931) | [code](https://github.com/maum-ai/assem-vc) |
-|               |
+#### 2. 下载并解压数据集
 
-## 作业要求
-- 确保可以仅在命令行输入模型和数据集名称就可以训练、验证。（部分仓库没有提供训练代码的，可以不训练）
-- 每个组都要提交一个README文件，写明完成的功能、最终实现的训练、验证截图、所使用的依赖、成员分工等。
+在最终训练之前，需要先初始化环境下载LJSpeech数据集，既可以从[官网下载](https://keithito.com/LJ-Speech-Dataset/)，也可以从[百度网盘下载](https://pan.baidu.com/s/1oTBcZawH7YpysQeYk8-5fw?pwd=706s)。
+
+百度网盘中有两个版本，`LJSpeech-1.1.zip`是没有处理过的，`LJSpeech_processed.zip`是处理过可以直接用的。
+
+假设下载的是处理过可以直接用的，**将压缩包放到文件夹`dataset`下面**，将压缩包中的内容解压到当前文件夹即可：
+
+```bash
+cd ./dataset
+unzip LJSpeech_processed.zip
+cd ..
+```
 
 
 
+#### 3. Build monotonic alignment search
+
+下载好数据集后，还有一步很重要的操作：Build monotonic alignment search。
+
+首先开启当前虚拟环境，运行如下代码：
+
+```bash
+# 需要先到talkingface/utils/vits_utils/monotonic_align/文件夹下
+cd ./talkingface/utils/vits_utils/monotonic_align/
+
+# 然后build
+python setup.py build_ext --inplace
+```
+
+linux会直接成功，windows一般会报错。
+
+如果出现“可能丢失数据”字样，并且该文件夹没有再嵌套一个monotonic_align文件夹，但是多出来了build文件夹，将build文件夹中的lib开头的文件夹中的monotonic_align文件夹移动到最外层的monotonic_align文件夹即可。
+
+**注意：Windows下build后的core不与Linux通用，如果更换平台需要重新build。**
+
+
+
+#### 4. 调整训练参数
+
+在文件夹`talkingface/properties/`下是模型的参数设置，比较重要的设置有两个：
+
+1. `overall.yaml`中的第一个`gpu_id`设置，设置其在哪个gpu上训练，训练前请不要忘记选择正确的gpu进行训练
+2. `model/VITS.yaml`中存储的是有关模型训练时的设置，其中的`batch_size`参数和gpu内存占用高度相关，请调整其到合适的大小
+
+
+
+#### 5. 运行训练代码
+
+之后在仓库的根路径下打开终端，复制下面的指令即可进行训练。如果想要测试，可以将模型放入[MoeGoe](https://github.com/CjangCjengh/MoeGoe)中进行语音的生成
+
+```bash
+python run_talkingface.py --model=VITS --dataset=LJSpeech
+```
+
+* windows上的训练（因为太慢了所以就截了一个训练开始的图）：
+  ![img.png](./readme_img/train_img_windows.png)
+
+* linux上的训练：
+  ![img.png](./readme_img/train_img_linux.png)
+
+
+
+## 验证截图
+
+通过原来的代码仓库给出的一个软件（MoeGoe）可以进行推理，生成语音：
+
+![img.png](./readme_img/val_img.png)
+
+
+
+## 所使用的依赖
+
+因为VITS用的是python3.7，所以就也用了同样的版本，别的依赖和原仓库略有不同，具体可以看[environment_vits_windows.yml](./environment_vits_windows.yml)或是[requirements_vits_linux.txt](./requirements_vits_linux.txt)
+
+- `python=3.7`
+- `torch==1.13.1+cu117`
+- `librosa==0.8.0`
+
+环境的安装方法已经在上面有过介绍了，如果需要的话可以看[创建虚拟环境](#1. 创建虚拟环境)那一节
+
+## 成员分工
+
+- 柳绍祯：阅读vits源码，对代码重构做出理解，让最终的代码成功运行
+- 尹祯：整合数据集、参数配置、模型方面的代码
+- 白宇：整合训练和测试过程相关代码

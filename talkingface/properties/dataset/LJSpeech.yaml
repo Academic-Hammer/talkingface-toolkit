@@ -1,0 +1,22 @@
+train_filelist: "dataset/LJSpeech/filelist/list.txt.cleaned"  # 当前数据划分为训练集的文件名列表存放位置，该文件的末尾是.txt，至于这里的.cleaned末尾是因为在数据预处理的时候会自动加上
+train_filelist_raw: "dataset/LJSpeech/filelist/list.txt"
+val_filelist: "dataset/LJSpeech/filelist/list_val.txt.cleaned"  # 当前数据划分为测试机的文件名列表存放位置
+val_filelist_raw: "dataset/LJSpeech/filelist/list_val.txt"
+data_root: "dataset/LJSpeech/data"  # 当前数据集的数据根目录
+preprocessed_root: 'dataset/LJSpeech/preprocessed_data' # 当前数据集的预处理数据根目录
+
+need_preprocess: True # 数据集是否需要预处理，如抽帧、抽音频等
+preprocess_batch_size: 32
+
+text_cleaners: ["cjke_cleaners2"]  # 选择合适的cleaner，具体可以参考talkingface/utils/vits_utils/text/cleaners.py中的代码
+max_wav_value: 32768.0
+sampling_rate: 22050
+filter_length: 1024
+hop_length: 256
+win_length: 1024
+n_mel_channels: 80
+mel_fmin: 0.0
+mel_fmax: null
+add_blank: true
+n_speakers: 0  # 数据集中的说话人数，如果是一个人填0
+cleaned_text: true  # 因为数据处理过后就有cleaned后缀，这里就是true

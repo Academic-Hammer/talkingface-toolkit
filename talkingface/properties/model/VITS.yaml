@@ -1,0 +1,36 @@
+# SynthesizerTrn(g_net)
+inter_channels: 192
+hidden_channels: 192
+filter_channels: 768
+n_heads: 2
+n_layers: 6
+kernel_size: 3
+p_dropout: 0.1
+resblock: "1"
+resblock_kernel_sizes: [3,7,11]
+resblock_dilation_sizes: [[1,3,5], [1,3,5], [1,3,5]]
+upsample_rates: [8,8,2,2]
+upsample_initial_channel: 512
+upsample_kernel_sizes: [16,16,4,4]
+n_layers_q: 3
+use_spectral_norm: false
+gin_channels: 256
+
+# 如果你不了解cleaner的工作机制，请不要动symbols，这里的Unicode是与talkingface.utils.vits_utils.text.symbols.py保持一致
+symbols: ["_", ",", ".", "!", "?", "-", "~", "\u2026", "N", "Q", "a", "b", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "s", "t", "u", "v", "w", "x", "y", "z", "\u0251", "\u00e6", "\u0283", "\u0291", "\u00e7", "\u026f", "\u026a", "\u0254", "\u025b", "\u0279", "\u00f0", "\u0259", "\u026b", "\u0265", "\u0278", "\u028a", "\u027e", "\u0292", "\u03b8", "\u03b2", "\u014b", "\u0266", "\u207c", "\u02b0", "`", "^", "#", "*", "=", "\u02c8", "\u02cc", "\u2192", "\u2193", "\u2191", " "]
+
+# Train
+checkpoint_sub_dir: "/vits" # 和overall.yaml里checkpoint_dir拼起来作为最终目录
+temp_sub_dir: "/vits" # 和overall.yaml里temp_dir拼起来作为最终目录
+log_interval: 200  # 生成日志的间隔
+eval_interval: 1000  # 模型保存和测试的间隔
+betas: [0.8, 0.99]
+eps: 1e-9
+batch_size: 16  # vits模型真正决定batch_size的地方，设成16需要的内存大概是9GB，设成32大概是15GB
+fp16_run: true
+lr_decay: 0.999875
+segment_size: 8192
+init_lr_ratio: 1
+warmup_epochs: 0
+c_mel: 45
+c_kl: 1.0

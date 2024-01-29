@@ -2,30 +2,22 @@ import os
 
 from logging import getLogger
 from time import time
-import dlib, json, subprocess
-import torch.nn.functional as F
-import glob
+# import dlib, json, subprocess
 import numpy as np
 import torch
 import torch.optim as optim
-from torch.nn.utils.clip_grad import clip_grad_norm_
 from tqdm import tqdm
-import torch.cuda.amp as amp
-from torch import nn
-from pathlib import Path
 
+import talkingface.model.text_to_speech.vits
 from talkingface.utils import(
     ensure_dir,
     get_local_time,
     early_stopping,
-    calculate_valid_score,
     dict2str,
     get_tensorboard,
     set_color,
-    get_gpu_usage,
     WandbLogger
 )
-from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
 from talkingface.evaluator import Evaluator
 
 
@@ -365,10 +357,10 @@ class Trainer(AbstractTrainer):
         Returns:
             best result
         """
-        if saved and self.start_epoch >= self.epochs:
+        if saved and self.start_epoch >= self.epochs:  # 为什么最开始要检查一下是否保存模型？
             self._save_checkpoint(-1, verbose=verbose)
 
-        if not (self.config['resume_checkpoint_path'] == None ) and self.config['resume']:
+        if not (self.config['resume_checkpoint_path'] == None ) and self.config['resume']:  # 使用之前的模型继续训练
             self.resume_checkpoint(self.config['resume_checkpoint_path'])
         
         for epoch_idx in range(self.start_epoch, self.epochs):
@@ -381,7 +373,7 @@ class Trainer(AbstractTrainer):
             train_loss_output = self._generate_train_loss_output(
                 epoch_idx, training_start_time, training_end_time, train_loss)
             
-            if verbose:
+            if verbose:  # 记录此次的日志
                 self.logger.info(train_loss_output)
             # self._add_train_loss_to_tensorboard(epoch_idx, train_loss)
 
@@ -554,4 +546,140 @@ class Wav2LipTrainer(Trainer):
         if losses_dict["sync_loss"] < .75:
             self.model.config["syncnet_wt"] = 0.01
         return average_loss_dict
-    
+
+
+class VITSTrainer(Trainer):
+    def __init__(self, config, model,
+                 decoder=talkingface.model.text_to_speech.vits.MultiPeriodDiscriminator,
+                 decoder_optimizer=torch.optim.AdamW):
+        super(VITSTrainer, self).__init__(config, model)
+
+        self.net_g = self.model
+        self.optim_g = self.optimizer
+        self.net_d = decoder(use_spectral_norm=False).cuda()
+        self.optim_d = decoder_optimizer(self.net_d.parameters(), lr=2e-4, betas=(0.8, 0.99), eps=1e-9)
+
+        # from torch.cuda.amp import GradScaler
+        # self.scaler = GradScaler(enabled=True)
+
+    def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
+        self.net_g.train()
+        self.net_d.train()
+        loss_func = loss_func or self.net_g.calculate_loss
+        total_loss_dict = {}
+        iter_data = (
+            tqdm(
+                train_data,
+                total=len(train_data),
+                ncols=None,
+            )
+            if show_progress
+            else train_data
+        )
+        step = 0
+
+        for batch_idx, interaction in enumerate(iter_data):
+            self.optim_g.zero_grad()
+            self.optim_d.zero_grad()
+            step += 1
+            # 计算第一部分loss
+            interaction_box = (interaction, self.net_d, self.config)
+            g_losses_dict, net_d_feature = loss_func(interaction_box)
+            loss_disc_all = g_losses_dict["loss_disc_all"]
+
+            # 计算第二部分loss
+            interaction_box = (net_d_feature, self.net_g, self.config)
+            d_losses_dict = self.net_d.calculate_loss(interaction_box)
+            loss_gen_all = d_losses_dict["loss_gen_all"]
+
+            for losses_dict in [g_losses_dict, d_losses_dict]:
+                for key, value in losses_dict.items():  # 对所有返回的loss值都看一遍
+                    if key in total_loss_dict:
+                        if not torch.is_tensor(value):
+                            total_loss_dict[key] += value
+                        # 如果键已经在总和字典中，累加当前值
+                        else:
+                            losses_dict[key] = value.item()
+                            total_loss_dict[key] += value.item()
+                    else:
+                        if not torch.is_tensor(value):
+                            total_loss_dict[key] = value
+                        # 否则，是新的键，将当前值添加到字典中
+                        else:
+                            losses_dict[key] = value.item()
+                            total_loss_dict[key] = value.item()
+            # iter_data.set_description(set_color(f"epoch: {epoch_idx} {g_losses_dict} {d_losses_dict}", "pink"))  # 太长了，显示不完
+            iter_data.set_description(set_color(f"epoch: {epoch_idx}, g: {loss_gen_all}, d: {loss_disc_all}", "pink"))
+
+            # self._check_nan(loss)
+            # loss.backward()
+
+            # self.scaler.scale(loss_disc_all).backward()
+            # self.scaler.unscale_(self.optim_d)
+            # # grad_norm_d = commons.clip_grad_value_(self.net_d.parameters(), None)
+            # self.scaler.step(self.optim_d)
+            #
+            # self.scaler.scale(loss_gen_all).backward()
+            # self.scaler.unscale_(self.optim_g)
+            # # grad_norm_g = commons.clip_grad_value_(self.net_g.parameters(), None)
+            # self.scaler.step(self.optim_g)
+            # self.scaler.update()
+
+            loss_disc_all.backward()
+            loss_gen_all.backward()
+            self.optim_g.step()
+            self.optim_d.step()
+
+        average_loss_dict = {}
+        for key, value in total_loss_dict.items():
+            average_loss_dict[key] = value / step
+        return average_loss_dict
+
+    def _valid_epoch(self, valid_data, show_progress=False):
+        print('Valid'.format(self.eval_step))
+        self.net_g.eval()
+        self.net_d.eval()
+        total_loss_dict = {}
+        iter_data = (
+            tqdm(valid_data,
+                 total=len(valid_data),
+                 ncols=None,
+                 desc=set_color("Valid", "pink")
+                 )
+            if show_progress
+            else valid_data
+        )
+        step = 0
+        with torch.no_grad():
+            for batch_idx, interaction in enumerate(iter_data):
+                step += 1
+                # 计算第一部分loss
+                interaction_box = (interaction, self.net_d)
+                g_losses_dict, net_d_feature = self.net_g.calculate_loss(interaction_box)
+
+                # 计算第二部分loss
+                interaction_box = (net_d_feature, self.net_g)
+                d_losses_dict = self.net_d.calculate_loss(interaction_box)
+
+                for losses_dict in [g_losses_dict, d_losses_dict]:
+                    for key, value in losses_dict.items():
+                        if key in total_loss_dict:
+                            if not torch.is_tensor(value):
+                                total_loss_dict[key] += value
+                            # 如果键已经在总和字典中，累加当前值
+                            else:
+                                losses_dict[key] = value.item()
+                                total_loss_dict[key] += value.item()
+                        else:
+                            if not torch.is_tensor(value):
+                                total_loss_dict[key] = value
+                            # 否则，将当前值添加到字典中
+                            else:
+                                losses_dict[key] = value.item()
+                                total_loss_dict[key] = value.item()
+        average_loss_dict = {}
+        for key, value in total_loss_dict.items():
+            average_loss_dict[key] = value / step
+        if losses_dict["sync_loss"] < .75:
+            self.model.config["syncnet_wt"] = 0.01
+        return average_loss_dict
