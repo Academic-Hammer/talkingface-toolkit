@@ -45,12 +45,13 @@
 ## 训练截图
 ![Alt text](README_IMG/1.png)  
 ![Alt text](README_IMG/2.png)
+![Alt text](README_IMG/3.png)
 ## 遇到的问题与解决
    &emsp;&emsp;1.原代码中使用apex库加速混合精度训练，但由于该库的配置问题无法在本机使用，故更改为仅使用torch.nn中包含的DistributedDataParallel方法。
    
    &emsp;&emsp;2.在运行代码时出现爆显存的问题，如下图所示：
 
-   ![img_1.png](README_IMG/3.png)
+   ![img_1.png](README_IMG/4.png)
    
    &emsp;&emsp;通过调小原代码所提供的batch_size参数以及在一个epoch训练结束后添加清除显存代码解决该问题：
    
