@@ -1,8 +1,8 @@
 import os
 
-from logging import getLogger
+from logging import config, getLogger
 from time import time
-import dlib, json, subprocess
+import json, subprocess
 import torch.nn.functional as F
 import glob
 import numpy as np
@@ -14,6 +14,7 @@ import torch.cuda.amp as amp
 from torch import nn
 from pathlib import Path
 
+'''
 from talkingface.utils import(
     ensure_dir,
     get_local_time,
@@ -25,9 +26,44 @@ from talkingface.utils import(
     get_gpu_usage,
     WandbLogger
 )
-from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
-from talkingface.evaluator import Evaluator
+'''
+#from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
+#from talkingface.evaluator import Evaluator
+from talkingface.data.dataset.StyleTTS2_dataset import Collater
 
+import random
+import yaml
+import time
+from munch import Munch
+import numpy as np
+import torch
+from torch import nn
+import torch.nn.functional as F
+import torchaudio
+import librosa
+import click
+import shutil
+import traceback
+import warnings
+warnings.simplefilter('ignore')
+from torch.utils.tensorboard import SummaryWriter
+
+#from meldataset import build_dataloader
+
+from Utils.ASR.models import ASRCNN
+from Utils.JDC.model import JDCNet
+from Utils.PLBERT.util import load_plbert
+
+from talkingface.model.text_to_speech_talkingface.StyleTTS2 import *
+from talkingface.utils.losses import *
+from utils import *
+
+from talkingface.trainer.StyleTTS2_train_second import *
+
+from Modules.slmadv import SLMAdversarialLoss
+from Modules.diffusion.sampler import DiffusionSampler, ADPM2Sampler, KarrasSchedule
+
+from talkingface.utils.optimizers import build_optimizer
 
 class AbstractTrainer(object):
     r"""Trainer Class is used to manage the training and evaluation processes of recommender system models.
@@ -49,6 +85,54 @@ class AbstractTrainer(object):
         raise NotImplementedError("Method [next] should be implemented.")
     
 
+
+
+# simple fix for dataparallel that allows access to class attributes
+class MyDataParallel(torch.nn.DataParallel):
+    def __getattr__(self, name):
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            return getattr(self.module, name)
+        
+import logging
+from logging import StreamHandler
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+handler = StreamHandler()
+handler.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+
+
+#@click.command()
+#@click.option('-p', '--config_path', default='Configs/config.yml', type=str)
+
+
+class StyleTTS2Trainer(AbstractTrainer):
+    def __init__(self,config,model):
+        super(StyleTTS2Trainer,self).__init__(config,model)
+
+    def fit(self,train_data_loader,val_data_loader):
+        config = self.config
+        config_path = config['config_path']
+
+        trainStyleTTS2(config_path,train_data_loader,val_data_loader,self.model)
+    
+    def evaluate(self, eval_data):
+        #原模型没有特别编写，只有一个demo
+
+        return 0
+
+    
+
+    
+
+        
+
+
+
+
+'''
 class Trainer(AbstractTrainer):
     r"""The basic Trainer for basic training and evaluation strategies in talkingface systems. This class defines common
     functions for training and evaluation processes of most recommender system models, including fit(), evaluate(),
@@ -445,9 +529,9 @@ class Trainer(AbstractTrainer):
         datadict = self.model.generate_batch()
         eval_result = self.evaluator.evaluate(datadict)
         self.logger.info(eval_result)
+'''
 
-
-
+'''
 class Wav2LipTrainer(Trainer):
     def __init__(self, config, model):
         super(Wav2LipTrainer, self).__init__(config, model)
@@ -555,3 +639,4 @@ class Wav2LipTrainer(Trainer):
             self.model.config["syncnet_wt"] = 0.01
         return average_loss_dict
     
+'''

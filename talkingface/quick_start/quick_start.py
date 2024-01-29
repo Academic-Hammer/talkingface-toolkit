@@ -1,26 +1,41 @@
-import logging
-import sys
-import torch.distributed as dist
-from collections.abc import MutableMapping
-from logging import getLogger
-import os
-from torch.utils import data as data_utils
-from ray import tune
+# load packages
+import random
+import yaml
+import time
+from munch import Munch
+import numpy as np
+import torch
+from torch import nn
+import torch.nn.functional as F
+import torchaudio
+import librosa
+import click
+import shutil
+import traceback
+import warnings
+warnings.simplefilter('ignore')
+from torch.utils.tensorboard import SummaryWriter
 
-from talkingface.config import Config
+#from meldataset import build_dataloader
 
-from talkingface.utils import (
-    init_logger,
-    get_model,
-    get_trainer,
-    init_seed,
-    set_color,
-    get_flops,
-    get_environment,
-    get_preprocess,
-    create_dataset
-)
+from Utils.ASR.models import ASRCNN
+from Utils.JDC.model import JDCNet
+from Utils.PLBERT.util import load_plbert
 
+from talkingface.model.text_to_speech_talkingface.StyleTTS2 import *
+from talkingface.data.dataset.StyleTTS2_dataset import *
+from talkingface.trainer import *
+from talkingface.utils.losses import *
+from utils import *
+
+from Modules.slmadv import SLMAdversarialLoss
+from Modules.diffusion.sampler import DiffusionSampler, ADPM2Sampler, KarrasSchedule
+
+from talkingface.utils.optimizers import build_optimizer
+#from talkingface.config import Config
+
+
+#华为云上支持的版本和该框架版本有些不兼容，有报错，这里改成手动配置各个部分
 def run(
         model,
         dataset,
@@ -29,15 +44,75 @@ def run(
         saved=True,
         evaluate_model_file=None
 ):
-    res = run_talkingface(
-        model=model,
-        dataset=dataset,
-        config_file_list=config_file_list,
-        config_dict=config_dict,
-        saved=saved,
-        evaluate_model_file=evaluate_model_file,
-    )
-    return res
+    #手动设置配置文件
+    config = yaml.safe_load(open('./talkingface/properties/model/StyleTTS2.yml'))
+    batch_size = config.get('batch_size', 10)
+
+    epochs = config.get('epochs_2nd', 200)
+    save_freq = config.get('save_freq', 2)
+    log_interval = config.get('log_interval', 10)
+    saving_epoch = config.get('save_freq', 2)
+
+    data_params = config.get('data_params', None)
+    sr = config['preprocess_params'].get('sr', 24000)
+    train_path = data_params['train_data']
+    val_path = data_params['val_data']
+    root_path = data_params['root_path']
+    min_length = data_params['min_length']
+    OOD_data = data_params['OOD_data']
+
+    max_len = config.get('max_len', 200)
+    
+    loss_params = Munch(config['loss_params'])
+    diff_epoch = loss_params.diff_epoch
+    joint_epoch = loss_params.joint_epoch
+    
+    optimizer_params = Munch(config['optimizer_params'])
+    
+    train_list, val_list = get_data_path_list(train_path, val_path)
+    device = 'cuda'
+
+    
+    #手动加载数据集，使用talkingface.data.dataset.StyleTTS2_dataset中的build_dataloader
+    train_dataloader = build_dataloader(train_list,
+                                        root_path,
+                                        OOD_data=OOD_data,
+                                        min_length=min_length,
+                                        batch_size=batch_size,
+                                        num_workers=2,
+                                        dataset_config={},
+                                        device=device)
+
+    val_dataloader = build_dataloader(val_list,
+                                      root_path,
+                                      OOD_data=OOD_data,
+                                      min_length=min_length,
+                                      batch_size=batch_size,
+                                      validation=True,
+                                      num_workers=0,
+                                      device=device,
+                                      dataset_config={})
+    
+    #手动加载model，使用talkingface.model.text_to_speech.StyleTTS2中的StyleTTS2
+    model_abs = StyleTTS2()
+    model=model_abs.loadmodel(config)
+
+    #手动加载trainer
+    trainer = StyleTTS2Trainer(config,model)
+
+    #装入数据并训练评估
+    trainer.fit(train_dataloader,val_dataloader)
+
+   
+
+
+
+
+
+
+
+
+'''
 
 def run_talkingface(
         model=None,
@@ -103,3 +178,4 @@ def run_talkingface(
     
 
 
+'''
