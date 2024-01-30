@@ -1,0 +1,1 @@
+from talkingface.model.image_driven_talkingface.wav2lip import Wav2Lip, SyncNet_color
