@@ -8,11 +8,17 @@ import functools
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 import numpy as np
+from tqdm import tqdm
 from collections import OrderedDict
 from torch.cuda.amp import autocast as autocast
 from abc import ABC, abstractmethod
 from .LiveSpeechPortraits import networks
 from talkingface.model.abstract_talkingface import AbstractTalkingFace
+import talkingface.model.audio_driven_talkingface.LiveSpeechPortraits.audio2feature as audio2feature
+import talkingface.model.audio_driven_talkingface.LiveSpeechPortraits.audio2headpose as audio2headpose
+import talkingface.model.audio_driven_talkingface.LiveSpeechPortraits.feature2face_G as feature2face_G
+import talkingface.model.audio_driven_talkingface.LiveSpeechPortraits.feature2face_D as feature2face_D
+from talkingface.model.audio_driven_talkingface.LiveSpeechPortraits.losses import GMMLogLoss, Sample_GMM, GANLoss, MaskedL1Loss, VGGLoss
 
 
 class BaseModel(ABC):
@@ -273,6 +279,540 @@ class BaseModel(ABC):
             if net is not None:
                 for param in net.parameters():
                     param.requires_grad = requires_grad
+
+
+class Audio2HeadposeModel(BaseModel):
+    def __init__(self, opt):
+        """Initialize the Audio2Headpose class.
+
+        Parameters:
+            opt (Option class)-- stores all the experiment flags; needs to be a subclass of BaseOptions
+        """
+        BaseModel.__init__(self, opt)
+
+        # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
+        # define networks
+        self.model_names = ['Audio2Headpose']
+        if opt.feature_decoder == 'WaveNet':
+            self.Audio2Headpose = networks.init_net(audio2headpose.Audio2Headpose(opt), init_type='normal',
+                                                    init_gain=0.02, gpu_ids=opt.gpu_ids)
+        elif opt.feature_decoder == 'LSTM':
+            self.Audio2Headpose = networks.init_net(audio2headpose.Audio2Headpose_LSTM(opt), init_type='normal',
+                                                    init_gain=0.02, gpu_ids=opt.gpu_ids)
+
+        # define only during training time
+        if self.isTrain:
+            # losses
+            self.criterion_GMM = GMMLogLoss(opt.A2H_GMM_ncenter, opt.A2H_GMM_ndim, opt.A2H_GMM_sigma_min).to(
+                self.device)
+            self.criterion_L2 = nn.MSELoss().cuda()
+            # optimizer
+            self.optimizer = torch.optim.Adam([{'params': self.Audio2Headpose.parameters(),
+                                                'initial_lr': opt.lr}], lr=opt.lr, betas=(0.9, 0.99))
+
+            self.optimizers.append(self.optimizer)
+
+            if opt.continue_train:
+                self.resume_training()
+
+    def resume_training(self):
+        opt = self.opt
+        ### if continue training, recover previous states
+        print('Resuming from epoch %s ' % (opt.load_epoch))
+        # change epoch count & update schedule settings
+        opt.epoch_count = int(opt.load_epoch)
+        self.schedulers = [networks.get_scheduler(optimizer, opt) for optimizer in self.optimizers]
+        # print lerning rate
+        lr = self.optimizers[0].param_groups[0]['lr']
+        print('update learning rate: {} -> {}'.format(opt.lr, lr))
+
+    def set_input(self, data, data_info=None):
+        """Unpack input data from the dataloader and perform necessary pre-processing steps.
+        """
+        if self.opt.feature_decoder == 'WaveNet':
+            self.headpose_audio_feats, self.history_headpose, self.target_headpose = data
+            self.headpose_audio_feats = self.headpose_audio_feats.to(self.device)
+            self.history_headpose = self.history_headpose.to(self.device)
+            self.target_headpose = self.target_headpose.to(self.device)
+        elif self.opt.feature_decoder == 'LSTM':
+            self.headpose_audio_feats, self.target_headpose = data
+            self.headpose_audio_feats = self.headpose_audio_feats.to(self.device)
+            self.target_headpose = self.target_headpose.to(self.device)
+
+    def forward(self):
+        '''
+        Args:
+            history_landmarks: [b, T, ndim]
+            audio_features: [b, 1, nfeas, nwins]
+        Returns:
+            preds: [b, T, output_channels]
+        '''
+
+        if self.opt.audio_windows == 2:
+            bs, item_len, ndim = self.headpose_audio_feats.shape
+            self.headpose_audio_feats = self.headpose_audio_feats.reshape(bs, -1, ndim * 2)
+        else:
+            bs, item_len, _, ndim = self.headpose_audio_feats.shape
+        if self.opt.feature_decoder == 'WaveNet':
+            self.preds_headpose = self.Audio2Headpose.forward(self.history_headpose, self.headpose_audio_feats)
+        elif self.opt.feature_decoder == 'LSTM':
+            self.preds_headpose = self.Audio2Headpose.forward(self.headpose_audio_feats)
+
+    def calculate_loss(self):
+        """ calculate loss in detail, only forward pass included"""
+        if self.opt.loss == 'GMM':
+            self.loss_GMM = self.criterion_GMM(self.preds_headpose, self.target_headpose)
+            self.loss = self.loss_GMM
+        elif self.opt.loss == 'L2':
+            self.loss_L2 = self.criterion_L2(self.preds_headpose, self.target_headpose)
+            self.loss = self.loss_L2
+
+        if not self.opt.smooth_loss == 0:
+            mu_gen = Sample_GMM(self.preds_headpose,
+                                self.Audio2Headpose.module.WaveNet.ncenter,
+                                self.Audio2Headpose.module.WaveNet.ndim,
+                                sigma_scale=0)
+            self.smooth_loss = (mu_gen[:, 2:] + self.target_headpose[:, :-2] - 2 * self.target_headpose[:, 1:-1]).mean(
+                dim=2).abs().mean()
+            self.loss += self.smooth_loss * self.opt.smooth_loss
+
+    def backward(self):
+        """Calculate losses, gradients, and update network weights; called in every training iteration"""
+        self.calculate_loss()
+        self.loss.backward()
+
+    def optimize_parameters(self):
+        """Update network weights; it will be called in every training iteration."""
+        self.optimizer.zero_grad()  # clear optimizer parameters grad
+        self.forward()  # forward pass
+        self.backward()  # calculate loss and gradients
+        self.optimizer.step()  # update gradients
+
+    def validate(self):
+        """ validate process """
+        with torch.no_grad():
+            self.forward()
+            self.calculate_loss()
+
+    def generate_sequences(self, audio_feats, pre_headpose, fill_zero=True, sigma_scale=0.0, opt=[]):
+        ''' generate landmark sequences given audio and a initialized landmark.
+        Note that the audio input should have the same sample rate as the training.
+        Args:
+            audio_sequences: [n,], in numpy
+            init_landmarks: [npts, 2], in numpy
+            sample_rate: audio sample rate, should be same as training process.
+            method(str): optional, how to generate the sequence, indeed it is the
+                loss function during training process. Options are 'L2' or 'GMM'.
+        Reutrns:
+            landmark_sequences: [T, npts, 2] predition landmark sequences
+        '''
+
+        frame_future = opt.frame_future
+        audio_feats = audio_feats.reshape(-1, 512 * 2)
+        nframe = audio_feats.shape[0] - frame_future
+        pred_headpose = np.zeros([nframe, opt.A2H_GMM_ndim])
+
+        if opt.feature_decoder == 'WaveNet':
+            # fill zero or not
+            if fill_zero == True:
+                # headpose
+                audio_feats_insert = np.repeat(audio_feats[0], opt.A2H_receptive_field - 1)
+                audio_feats_insert = audio_feats_insert.reshape(-1, opt.A2H_receptive_field - 1).T
+                audio_feats = np.concatenate([audio_feats_insert, audio_feats])
+                # history headpose
+                history_headpose = np.repeat(pre_headpose, opt.A2H_receptive_field)
+                history_headpose = history_headpose.reshape(-1, opt.A2H_receptive_field).T
+                history_headpose = torch.from_numpy(history_headpose).unsqueeze(0).float().to(self.device)
+                infer_start = 0
+            else:
+                return None
+
+                # evaluate mode
+            self.Audio2Headpose.eval()
+
+            with torch.no_grad():
+                for i in tqdm(range(infer_start, nframe), desc='generating headpose'):
+                    history_start = i - infer_start
+                    input_audio_feats = audio_feats[
+                                        history_start + frame_future: history_start + frame_future + opt.A2H_receptive_field]
+                    input_audio_feats = torch.from_numpy(input_audio_feats).unsqueeze(0).float().to(self.device)
+
+                    if self.opt.feature_decoder == 'WaveNet':
+                        preds = self.Audio2Headpose.forward(history_headpose, input_audio_feats)
+                    elif self.opt.feature_decoder == 'LSTM':
+                        preds = self.Audio2Headpose.forward(input_audio_feats)
+
+                    if opt.loss == 'GMM':
+                        pred_data = Sample_GMM(preds, opt.A2H_GMM_ncenter, opt.A2H_GMM_ndim, sigma_scale=sigma_scale)
+                    elif opt.loss == 'L2':
+                        pred_data = preds
+
+                    # get predictions
+                    pred_headpose[i] = pred_data[0, 0].cpu().detach().numpy()
+                    history_headpose = torch.cat((history_headpose[:, 1:, :], pred_data.to(self.device)),
+                                                 dim=1)  # add in time-axis
+
+            return pred_headpose
+
+        elif opt.feature_decoder == 'LSTM':
+            self.Audio2Headpose.eval()
+            with torch.no_grad():
+                input = torch.from_numpy(audio_feats).unsqueeze(0).float().to(self.device)
+                preds = self.Audio2Headpose.forward(input)
+                if opt.loss == 'GMM':
+                    pred_data = Sample_GMM(preds, opt.A2H_GMM_ncenter, opt.A2H_GMM_ndim, sigma_scale=sigma_scale)
+                elif opt.loss == 'L2':
+                    pred_data = preds
+                # get predictions
+                pred_headpose = pred_data[0].cpu().detach().numpy()
+
+            return pred_headpose
+
+
+class Feature2FaceModel(BaseModel):
+    def __init__(self, opt):
+        """Initialize the Feature2Face class.
+
+        Parameters:
+            opt (Option class)-- stores all the experiment flags; needs to be a subclass of BaseOptions
+        """
+        BaseModel.__init__(self, opt)
+        self.Tensor = torch.cuda.FloatTensor
+        # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
+        # define networks
+        self.model_names = ['Feature2Face_G']
+        self.Feature2Face_G = networks.init_net(feature2face_G.Feature2Face_G(opt), init_type='normal', init_gain=0.02,
+                                                gpu_ids=opt.gpu_ids)
+        if self.isTrain:
+            if not opt.no_discriminator:
+                self.model_names += ['Feature2Face_D']
+                from . import feature2face_D
+                self.Feature2Face_D = networks.init_net(feature2face_D.Feature2Face_D(opt), init_type='normal',
+                                                        init_gain=0.02, gpu_ids=opt.gpu_ids)
+
+        # define only during training time
+        if self.isTrain:
+            # define losses names
+            self.loss_names_G = ['L1', 'VGG', 'Style', 'loss_G_GAN', 'loss_G_FM']
+            # criterion
+            self.criterionMaskL1 = MaskedL1Loss().cuda()
+            self.criterionL1 = nn.L1Loss().cuda()
+            self.criterionVGG = VGGLoss.cuda()
+            self.criterionFlow = nn.L1Loss().cuda()
+
+            # initialize optimizer G
+            if opt.TTUR:
+                beta1, beta2 = 0, 0.9
+                lr = opt.lr / 2
+            else:
+                beta1, beta2 = opt.beta1, 0.999
+                lr = opt.lr
+            self.optimizer_G = torch.optim.Adam([{'params': self.Feature2Face_G.module.parameters(),
+                                                  'initial_lr': lr}],
+                                                lr=lr,
+                                                betas=(beta1, beta2))
+            self.optimizers.append(self.optimizer_G)
+
+            # fp16 training
+            if opt.fp16:
+                self.scaler = torch.cuda.amp.GradScaler()
+
+            # discriminator setting
+            if not opt.no_discriminator:
+                self.criterionGAN = GANLoss(opt.gan_mode, tensor=self.Tensor)
+                self.loss_names_D = ['D_real', 'D_fake']
+                # initialize optimizer D
+                if opt.TTUR:
+                    beta1, beta2 = 0, 0.9
+                    lr = opt.lr * 2
+                else:
+                    beta1, beta2 = opt.beta1, 0.999
+                    lr = opt.lr
+                self.optimizer_D = torch.optim.Adam([{'params': self.Feature2Face_D.module.netD.parameters(),
+                                                      'initial_lr': lr}],
+                                                    lr=lr,
+                                                    betas=(beta1, beta2))
+                self.optimizers.append(self.optimizer_D)
+
+    def init_paras(self, dataset):
+        opt = self.opt
+        iter_path = os.path.join(self.save_dir, 'iter.txt')
+        start_epoch, epoch_iter = 1, 0
+        ### if continue training, recover previous states
+        if opt.continue_train:
+            if os.path.exists(iter_path):
+                start_epoch, epoch_iter = np.loadtxt(iter_path, delimiter=',', dtype=int)
+                print('Resuming from epoch %d at iteration %d' % (start_epoch, epoch_iter))
+                # change epoch count & update schedule settings
+                opt.epoch_count = start_epoch
+                self.schedulers = [networks.get_scheduler(optimizer, opt) for optimizer in self.optimizers]
+                # print lerning rate
+                lr = self.optimizers[0].param_groups[0]['lr']
+                print('update learning rate: {} -> {}'.format(opt.lr, lr))
+            else:
+                print('not found training log, hence training from epoch 1')
+            # change training sequence length
+        #            if start_epoch > opt.nepochs_step:
+        #                dataset.dataset.update_training_batch((start_epoch-1)//opt.nepochs_step)
+
+        total_steps = (start_epoch - 1) * len(dataset) + epoch_iter
+        total_steps = total_steps // opt.print_freq * opt.print_freq
+
+        return start_epoch, opt.print_freq, total_steps, epoch_iter
+
+    def set_input(self, data, data_info=None):
+        """Unpack input data from the dataloader and perform necessary pre-processing steps.
+        """
+        self.feature_map, self.cand_image, self.tgt_image, self.facial_mask = \
+            data['feature_map'], data['cand_image'], data['tgt_image'], data['weight_mask']
+        self.feature_map = self.feature_map.to(self.device)
+        self.cand_image = self.cand_image.to(self.device)
+        self.tgt_image = self.tgt_image.to(self.device)
+
+    #        self.facial_mask = self.facial_mask.to(self.device)
+
+    def forward(self):
+        ''' forward pass for feature2Face
+        '''
+        self.input_feature_maps = torch.cat([self.feature_map, self.cand_image], dim=1)
+        self.fake_pred = self.Feature2Face_G(self.input_feature_maps)
+
+    def backward_G(self):
+        """Calculate GAN and other loss for the generator"""
+        # GAN loss
+        real_AB = torch.cat((self.input_feature_maps, self.tgt_image), dim=1)
+        fake_AB = torch.cat((self.input_feature_maps, self.fake_pred), dim=1)
+        pred_real = self.Feature2Face_D(real_AB)
+        pred_fake = self.Feature2Face_D(fake_AB)
+        loss_G_GAN = self.criterionGAN(pred_fake, True)
+        # L1, vgg, style loss
+        loss_l1 = self.criterionL1(self.fake_pred, self.tgt_image) * self.opt.lambda_L1
+        #        loss_maskL1 = self.criterionMaskL1(self.fake_pred, self.tgt_image, self.facial_mask * self.opt.lambda_mask)
+        loss_vgg, loss_style = self.criterionVGG(self.fake_pred, self.tgt_image, style=True)
+        loss_vgg = torch.mean(loss_vgg) * self.opt.lambda_feat
+        loss_style = torch.mean(loss_style) * self.opt.lambda_feat
+        # feature matching loss
+        loss_FM = self.compute_FeatureMatching_loss(pred_fake, pred_real)
+
+        # combine loss and calculate gradients
+
+        if not self.opt.fp16:
+            self.loss_G = loss_G_GAN + loss_l1 + loss_vgg + loss_style + loss_FM  # + loss_maskL1
+            self.loss_G.backward()
+        else:
+            with autocast():
+                self.loss_G = loss_G_GAN + loss_l1 + loss_vgg + loss_style + loss_FM  # + loss_maskL1
+            self.scaler.scale(self.loss_G).backward()
+
+        self.loss_dict = {**self.loss_dict,
+                          **dict(zip(self.loss_names_G, [loss_l1, loss_vgg, loss_style, loss_G_GAN, loss_FM]))}
+
+    def backward_D(self):
+        """Calculate GAN loss for the discriminator"""
+        # GAN loss
+        real_AB = torch.cat((self.input_feature_maps, self.tgt_image), dim=1)
+        fake_AB = torch.cat((self.input_feature_maps, self.fake_pred), dim=1)
+        pred_real = self.Feature2Face_D(real_AB)
+        pred_fake = self.Feature2Face_D(fake_AB.detach())
+        with autocast():
+            loss_D_real = self.criterionGAN(pred_real, True) * 2
+            loss_D_fake = self.criterionGAN(pred_fake, False)
+
+        self.loss_D = (loss_D_fake + loss_D_real) * 0.5
+
+        self.loss_dict = dict(zip(self.loss_names_D, [loss_D_real, loss_D_fake]))
+
+        if not self.opt.fp16:
+            self.loss_D.backward()
+        else:
+            self.scaler.scale(self.loss_D).backward()
+
+    def compute_FeatureMatching_loss(self, pred_fake, pred_real):
+        # GAN feature matching loss
+        loss_FM = torch.zeros(1).cuda()
+        feat_weights = 4.0 / (self.opt.n_layers_D + 1)
+        D_weights = 1.0 / self.opt.num_D
+        for i in range(min(len(pred_fake), self.opt.num_D)):
+            for j in range(len(pred_fake[i])):
+                loss_FM += D_weights * feat_weights * \
+                           self.criterionL1(pred_fake[i][j], pred_real[i][j].detach()) * self.opt.lambda_feat
+
+        return loss_FM
+
+    def optimize_parameters(self):
+        """Update network weights; it will be called in every training iteration."""
+        # only train single image generation
+        ## forward
+        self.forward()
+        # update D
+        self.set_requires_grad(self.Feature2Face_D, True)  # enable backprop for D
+        self.optimizer_D.zero_grad()  # set D's gradients to zero
+        if not self.opt.fp16:
+            self.backward_D()  # calculate gradients for D
+            self.optimizer_D.step()  # update D's weights
+        else:
+            with autocast():
+                self.backward_D()
+            self.scaler.step(self.optimizer_D)
+
+        # update G
+        self.set_requires_grad(self.Feature2Face_D, False)  # D requires no gradients when optimizing G
+        self.optimizer_G.zero_grad()  # set G's gradients to zero
+        if not self.opt.fp16:
+            self.backward_G()  # calculate graidents for G
+            self.optimizer_G.step()  # udpate G's weights
+        else:
+            with autocast():
+                self.backward_G()
+            self.scaler.step(self.optimizer_G)
+            self.scaler.update()
+
+    def inference(self, feature_map, cand_image):
+        """ inference process """
+        with torch.no_grad():
+            if cand_image == None:
+                input_feature_maps = feature_map
+            else:
+                input_feature_maps = torch.cat([feature_map, cand_image], dim=1)
+            if not self.opt.fp16:
+                fake_pred = self.Feature2Face_G(input_feature_maps)
+            else:
+                with autocast():
+                    fake_pred = self.Feature2Face_G(input_feature_maps)
+        return fake_pred
+
+class Audio2FeatureModel(BaseModel):
+    def __init__(self, opt):
+        """Initialize the Audio2Feature class.
+
+        Parameters:
+            opt (Option class)-- stores all the experiment flags; needs to be a subclass of BaseOptions
+        """
+        BaseModel.__init__(self, opt)
+
+        # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
+        # define networks
+        self.model_names = ['Audio2Feature']
+        self.Audio2Feature = networks.init_net(audio2feature.Audio2Feature(opt), init_type='normal', init_gain=0.02,
+                                               gpu_ids=opt.gpu_ids)
+
+        # define only during training time
+        if self.isTrain:
+            # losses
+            self.featureL2loss = torch.nn.MSELoss().to(self.device)
+            # optimizer
+            self.optimizer = torch.optim.Adam([{'params': self.Audio2Feature.parameters(),
+                                                'initial_lr': opt.lr}], lr=opt.lr, betas=(0.9, 0.99))
+
+            self.optimizers.append(self.optimizer)
+
+            if opt.continue_train:
+                self.resume_training()
+
+    def resume_training(self):
+        opt = self.opt
+        ### if continue training, recover previous states
+        print('Resuming from epoch %s ' % (opt.load_epoch))
+        # change epoch count & update schedule settings
+        opt.epoch_count = int(opt.load_epoch)
+        self.schedulers = [networks.get_scheduler(optimizer, opt) for optimizer in self.optimizers]
+        # print lerning rate
+        lr = self.optimizers[0].param_groups[0]['lr']
+        print('update learning rate: {} -> {}'.format(opt.lr, lr))
+
+    def set_input(self, data, data_info=None):
+        """Unpack input data from the dataloader and perform necessary pre-processing steps.
+        """
+
+        self.audio_feats, self.target_info = data
+        #        b, item_length, mel_channels, width = self.audio_feats.shape
+        self.audio_feats = self.audio_feats.to(self.device)
+        self.target_info = self.target_info.to(self.device)
+
+        # gaussian noise
+
+    #        if self.opt.gaussian_noise:
+    #            self.audio_feats = self.opt.gaussian_noise_scale * torch.randn(self.audio_feats.shape).cuda()
+    #            self.target_info += self.opt.gaussian_noise_scale * torch.randn(self.target_info.shape).cuda()
+
+    def forward(self):
+        '''
+        Args:
+            history_landmarks: [b, T, ndim]
+            audio_features: [b, 1, nfeas, nwins]
+        Returns:
+            preds: [b, T, output_channels]
+        '''
+        self.preds = self.Audio2Feature.forward(self.audio_feats)
+
+    def calculate_loss(self):
+        """ calculate loss in detail, only forward pass included"""
+        if self.opt.loss == 'GMM':
+            b, T, _ = self.target_info.shape
+            self.loss_GMM = self.criterion_GMM(self.preds, self.target_info)
+            self.loss = self.loss_GMM
+
+        elif self.opt.loss == 'L2':
+            frame_future = self.opt.frame_future
+            if not frame_future == 0:
+                self.loss = self.featureL2loss(self.preds[:, frame_future:], self.target_info[:, :-frame_future]) * 1000
+            else:
+                self.loss = self.featureL2loss(self.preds, self.target_info) * 1000
+
+    def backward(self):
+        """Calculate losses, gradients, and update network weights; called in every training iteration"""
+        self.calculate_loss()
+        self.loss.backward()
+
+    def optimize_parameters(self):
+        """Update network weights; it will be called in every training iteration."""
+        self.optimizer.zero_grad()  # clear optimizer parameters grad
+        self.forward()  # forward pass
+        self.backward()  # calculate loss and gradients
+        self.optimizer.step()  # update gradients
+
+    def validate(self):
+        """ validate process """
+        with torch.no_grad():
+            self.forward()
+            self.calculate_loss()
+
+    def generate_sequences(self, audio_feats, sample_rate=16000, fps=60, fill_zero=True, opt=[]):
+        ''' generate landmark sequences given audio and a initialized landmark.
+        Note that the audio input should have the same sample rate as the training.
+        Args:
+            audio_sequences: [n,], in numpy
+            init_landmarks: [npts, 2], in numpy
+            sample_rate: audio sample rate, should be same as training process.
+            method(str): optional, how to generate the sequence, indeed it is the
+                loss function during training process. Options are 'L2' or 'GMM'.
+        Reutrns:
+            landmark_sequences: [T, npts, 2] predition landmark sequences
+        '''
+
+        frame_future = opt.frame_future
+        nframe = int(audio_feats.shape[0] / 2)
+
+        if not frame_future == 0:
+            audio_feats_insert = np.repeat(audio_feats[-1], 2 * (frame_future)).reshape(-1, 2 * (frame_future)).T
+            audio_feats = np.concatenate([audio_feats, audio_feats_insert])
+
+        # evaluate mode
+        self.Audio2Feature.eval()
+
+        with torch.no_grad():
+            input = torch.from_numpy(audio_feats).unsqueeze(0).float().to(self.device)
+            preds = self.Audio2Feature.forward(input)
+
+            # drop first frame future results
+        if not frame_future == 0:
+            preds = preds[0, frame_future:].cpu().detach().numpy()
+        else:
+            preds = preds[0, :].cpu().detach().numpy()
+
+        assert preds.shape[0] == nframe
+
+        return preds
 
 
 class live_speech_portraits(AbstractTalkingFace):
