@@ -207,8 +207,13 @@ python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx
 - 每个组都要提交一个README文件，写明完成的功能、最终实现的训练、验证截图、所使用的依赖、成员分工等。
 
 
-##小组README文件
-###张卓远
+## 小组README文件
+
+### 环境要求（依赖）
+依赖库详见 requirements.txt。要求安装ffmpeg, 安装albumentations库
+
+### 张卓远
+
 编写实现了模型的数据预处理和数据加载代码，编写实现了模型emo_disc部分模型。
 运行步骤：
 进入talkingface/data/dataprocess/文件夹下运行控制台，输入命令
@@ -229,6 +234,13 @@ python emogen_dataprocess.py --inputfolder <folder_of_dataset> --preprocessed_ro
 
 由于训练过程过长，可以在中途输入Ctrl^C以停止训练
 
+
+### 蒋政
+完成训练部分代码编写，实现专家口型同步鉴别器模型
+修改requirements.txt
+修改utils文件夹中的utils.py
+在model文件夹中添加conv.py, syncnet.py, wav2lip.py，修改__init__.py
+在trainer文件夹中添加color_syncnet_train.py, emotion_disc_train.py
 
 
 
