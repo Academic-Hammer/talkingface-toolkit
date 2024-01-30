@@ -1,0 +1,9 @@
+train_filelist: 'dataset/cnn/filelist/train.txt' # 当前数据集的数据划分文件 train
+val_filelist: 'dataset/cnn/filelist/val.txt' # 当前数据集的数据划分文件 val
+
+data_root: 'dataset/cnn/data' # 当前数据集的数据根目录
+preprocessed_root: 'dataset/cnn/preprocessed_data' # 当前数据集的预处理数据根目录
+
+need_preprocess: True # 数据集是否需要预处理，如抽帧、抽音频等
+
+preprocess_batch_size: 32

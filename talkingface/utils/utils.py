@@ -46,12 +46,13 @@ def get_model(model_name):
         "audio_driven_talkingface",
         "image_driven_talkingface",
         "nerf_based_talkingface",
-        "text_to_speech",
-        "voice_conversion"
-
+        # "text_to_speech",
+        # "voice_conversion"
     ]
 
     model_file_name = model_name.lower()
+    print(model_file_name)
+    print(model_name)
     model_module = None
     for submodule in model_submodule:
         module_path = ".".join(["talkingface.model", submodule, model_file_name])
@@ -443,6 +444,7 @@ def create_dataset(config):
             "`dataset_file_name` [{}] is not the name of an existing dataset.".format(dataset_file_name)
         )
     dataset_class = getattr(dataset_module, model_name+'Dataset')
+    print("Loading dataset [{}]".format(dataset_file_name))
 
     return dataset_class(config, config['train_filelist']), dataset_class(config, config['val_filelist'])
 

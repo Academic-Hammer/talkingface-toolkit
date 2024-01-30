@@ -69,6 +69,7 @@ def run_talkingface(
     logger = getLogger()
     logger.info(sys.argv)
     logger.info(config)
+    # print(config)
 
     #data processing
     # print(not (os.listdir(config['preprocessed_root'])))
@@ -76,6 +77,7 @@ def run_talkingface(
         get_preprocess(config['dataset'])(config).run()
 
     train_dataset, val_dataset = create_dataset(config)
+    print("dataset created")
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=config["batch_size"], shuffle=True
     )
@@ -84,12 +86,14 @@ def run_talkingface(
     )
 
     # load model
+    print("load model")
     model = get_model(config["model"])(config).to(config["device"])
     logger.info(model)
 
     trainer = get_trainer(config["model"])(config, model)
 
     # model training
+    print("train")
     if config['train']:
         trainer.fit(train_data_loader, val_data_loader, saved=saved, show_progress=config["show_progress"])
         # print(1)

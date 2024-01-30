@@ -1,0 +1,11 @@
+expname = cnn
+expname_finetune = cnn
+datadir = dataset/cnn
+basedir = dataset/finetune_models
+ft_path = checkpoints/cnn_500000_head.tar
+near = 0.5613524198532105
+far = 1.1613524198532104
+testskip = 1 
+L2loss_weight = 5e-8
+train_length = 15
+bc_type=torso_imgs
