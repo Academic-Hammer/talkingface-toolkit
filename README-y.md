@@ -80,6 +80,7 @@ cd ../../../..
 然后将talkingface/model/text_to_speech/tts/monotonic_align/build文件夹下lib开头的文件夹下的pyd文件复制到talkingface/model/text_to_speech/tts/monotonic_align文件夹下
 ```
 ## 其他需要说明的地方
+- 数据集存储位置自行选择，将文件夹[filelist](dataset%2FLJSpeech1.1%2Ffilelist)下的三个txt文件改为数据集所在位置即可
 - 本次实验使用的数据集为LJSpeech1.1，数据集下载地址为：https://keithito.com/LJ-Speech-Dataset/
 - 由于源代码的data_utils.DataLoader中使用了筛选器参数collate_fn，而本项目的数据载入在quick_start.py中,出于项目兼容考虑，不便修改源代码，因此在GradTTSTrainer类中重写了fit方法，将数据集重新载入
 - 由于源代码的trainer.Trainer中的valid_epoch方法中出现代码编写错误，因此在GradTTSTrainer类中重写了_valid_epoch方法
