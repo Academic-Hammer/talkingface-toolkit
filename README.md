@@ -3,7 +3,19 @@
 # 模型选择：
 我们选择复现的模型是[StarGAN-VC](https://github.com/kamepong/StarGAN-VC)模型，是专为语音转换任务设计的模型。它是StarGAN框架的延伸，该框架最初用于图像到图像的转换任务。StarGAN-VC专注于将一个说话者的语音特征转换为另一个说话者。
 # 作业环境
+python3.8
+
+开发环境：PyCharm2022.1.3
+
+框架：PyTorch2.1
+
+操作系统：Windows11，macOs
+
+语音识别库：Librosa0.10.1
+
+数据处理库：NumPy1.20.3
 # 数据集
+包含p225、226、227，分为test、train、val三种，详见dataset文件夹。
 # 运行说明
 # 运行指令
 总指令：python run_talkingface.py --model stargan --dataset vctk
