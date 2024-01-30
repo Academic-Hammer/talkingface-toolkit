@@ -1,4 +1,8 @@
+
+# StyleHeat TalkingFace模型实现说明文档
+## 目录
 - [StyleHeat TalkingFace模型实现说明文档](#styleheat-talkingface模型实现说明文档)
+  - [目录](#目录)
   - [简介](#简介)
   - [团队成员分工](#团队成员分工)
   - [快速使用](#快速使用)
@@ -11,10 +15,6 @@
       - [VOX-StyleHeatWarpper](#vox-styleheatwarpper)
       - [HDTF-StyleHeat](#hdtf-styleheat)
   - [模型实现](#模型实现)
-
-
-# StyleHeat TalkingFace模型实现说明文档
-
 ## 简介
 
 本文档是（王菁芃,周楚舒,明楷,杨梓,潘静雯）小组成果中StyleHeat模型部分的说明文档。metaportrait模型部分在[metaportrait]()仓库中。
