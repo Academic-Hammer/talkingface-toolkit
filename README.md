@@ -220,7 +220,7 @@ python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx
 
 进入talkingface/data/dataprocess/文件夹下运行控制台，输入命令
 
-python emogen_process.py --inputfolder <folder_of_dataset> --preprocessed_root <output_folder_for_preprocessed_dataset/>
+python emogen_process.py --input_folder <folder_of_dataset> --preprocessed_root <output_folder_for_preprocessed_dataset/>
 
 预处理会先将视频转化为25帧格式，此过程需要安装ffmpeg并添加为环境变量。
 
