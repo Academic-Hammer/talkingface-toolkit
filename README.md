@@ -13,8 +13,8 @@
 高艺芙-1120213132-87022102:负责配置好实验环境，准备实验数据，运行starGan模型，将得到配置文件json转换为yaml并整合到相应的文件结构中。
 
 贺芳琪-1120210640-08012101:部分配置调整，主要负责data，数据预处理部分。
-  将stargan-vc中的dataset.py、compute_statistics.py、extract_features.py、normalize_features.py中有关数据预处理的代码整合到talkingface-toolkit/talkingface/data的dataset和dataprocess文件夹中，并修改了talkingface-toolkit中yaml里面有关数据预处理的参数。详细可见readme文件。
-  划分数据集，按照80%、10%、10%的比例划分了三个数据集，生成了test.txt、train.txt、val.txt等文件，保存在dataset文件夹中。
+  将stargan-vc中的dataset.py、compute_statistics.py、extract_features.py、normalize_features.py中有关数据预处理的代码整合到talkingface-toolkit/talkingface/data的dataset和dataprocess文件夹中，并修改了talkingface-toolkit中yaml里面有关数据预处理的参数。
+  划分数据集，按照80%、10%、10%的比例划分了三个数据集，生成了test.txt、train.txt、val.txt等文件，保存在dataset文件夹中。详细解释可见data部分的readme文件中。
   
 陈清扬-1120213599-87112186:模型代码重构，训练代码重构，推理文件重构，配置文件调整，测试代码与bug修复，撰写实验报告
 
