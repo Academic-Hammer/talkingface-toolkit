@@ -7,7 +7,6 @@ import pandas as pd
 import numpy as np
 import torch 
 import torch.nn as nn
-
 from torch.utils.tensorboard import SummaryWriter
 from texttable import Texttable
 
@@ -58,12 +57,13 @@ def get_model(model_name):
         if importlib.util.find_spec(module_path, __name__):
             model_module = importlib.import_module(module_path, __name__)
             break
-
+        
     if model_module is None:
         raise ValueError(
             "`model_name` [{}] is not the name of an existing model.".format(model_name)
         )
     model_class = getattr(model_module, model_name)
+    
     return model_class
 
 def get_trainer(model_name):
@@ -438,10 +438,10 @@ def create_dataset(config):
     module_path = ".".join(["talkingface.data.dataset", dataset_file_name])
     if importlib.util.find_spec(module_path, __name__):
         dataset_module = importlib.import_module(module_path, __name__)
-    if dataset_module is None:
-        raise ValueError(
-            "`dataset_file_name` [{}] is not the name of an existing dataset.".format(dataset_file_name)
-        )
+        if dataset_module is None:
+            raise ValueError(
+                "`dataset_file_name` [{}] is not the name of an existing dataset.".format(dataset_file_name)
+            )
     dataset_class = getattr(dataset_module, model_name+'Dataset')
 
     return dataset_class(config, config['train_filelist']), dataset_class(config, config['val_filelist'])

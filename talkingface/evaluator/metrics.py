@@ -224,7 +224,7 @@ class SSIM(VideoQMetric):
         pair_list = self.get_videopair(dataobject)
 
         ssim_score_total = []
-
+        print(pair_list)
         iter_data = (
             tqdm(
                 pair_list,

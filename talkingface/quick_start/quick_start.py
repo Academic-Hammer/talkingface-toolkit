@@ -1,4 +1,6 @@
 import logging
+import os
+
 import sys
 import torch.distributed as dist
 from collections.abc import MutableMapping
@@ -29,6 +31,7 @@ def run(
         saved=True,
         evaluate_model_file=None
 ):
+    
     res = run_talkingface(
         model=model,
         dataset=dataset,
@@ -37,6 +40,7 @@ def run(
         saved=saved,
         evaluate_model_file=evaluate_model_file,
     )
+    
     return res
 
 def run_talkingface(
@@ -86,7 +90,6 @@ def run_talkingface(
     # load model
     model = get_model(config["model"])(config).to(config["device"])
     logger.info(model)
-
     trainer = get_trainer(config["model"])(config, model)
 
     # model training

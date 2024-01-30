@@ -59,6 +59,7 @@ class Config(object):
             config_file_list (list of str): the external config file, it allows multiple config files, default is None.
             config_dict (dict): the external parameter dictionaries, default is None.
         """
+        
         self.compatibility_settings()
         self._init_parameters_category()
         self.yaml_loader = self._build_yaml_loader()
@@ -66,12 +67,20 @@ class Config(object):
         self.variable_config_dict = self._load_variable_config_dict(config_dict)
         self.cmd_config_dict = self._load_cmd_line()
         self._merge_external_config_dict()
-
+        print(model)
+        print(dataset)
+        print(config_file_list)
+        print(config_dict)
         self.model, self.model_class, self.dataset = self._get_model_and_dataset(
             model, dataset
         ) 
+        print(model)
+        print(dataset)
+        print(config_file_list)
+        print(config_dict)
         self._load_internal_config_dict(self.model, self.model_class, self.dataset)
         self.final_config_dict = self._get_final_config_dict()
+        
         self._set_default_parameters()
         self._init_device()
 
