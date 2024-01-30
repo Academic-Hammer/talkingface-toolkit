@@ -215,10 +215,15 @@ python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx
 ### 张卓远
 
 编写实现了模型的数据预处理和数据加载代码，编写实现了模型emo_disc情绪鉴别器模型，编写emogen.yaml。
+
 运行步骤：
+
 进入talkingface/data/dataprocess/文件夹下运行控制台，输入命令
+
 python emogen_process.py --inputfolder <folder_of_dataset> --preprocessed_root <output_folder_for_preprocessed_dataset/>
+
 预处理会先将视频转化为25帧格式，此过程需要安装ffmpeg并添加为环境变量。
+
 并将转化好的视频存入./modified_videos文件夹下
 <img width="1280" alt="数据预处理第一步转换FPS演示结果" src="https://github.com/zhangyuanyuan02/talkingface-toolkit/assets/103866519/11d41884-5fc6-4af1-8664-2bb58e54db30">
 <img width="1276" alt="转换视频FPS结果" src="https://github.com/zhangyuanyuan02/talkingface-toolkit/assets/103866519/1b751036-dbea-47b6-b3a3-fa82a8c711a7">
