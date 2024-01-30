@@ -1,0 +1,10 @@
+{
+    "num_mels": 80,
+    "fs": 16000,
+    "flen": 1024,
+    "fshift": 128,
+    "fmin": 80,
+    "fmax": 7600,
+    "trim_silence": false,
+    "top_db": 30
+}
