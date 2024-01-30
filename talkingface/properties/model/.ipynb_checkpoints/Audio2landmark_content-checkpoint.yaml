@@ -1,0 +1,92 @@
+resume: True
+resume_checkpoint_path: "saved/ckpt_last_epoch.pth"
+
+root_dir: ROOT_DIR  # Root dir for data
+nepoch: 1  # Number of epochs to train for
+batch_size: 1  # Batch size
+in_batch_nepoch: 1
+first_in_batch_nepoch: 1
+segment_batch_size: 128  # Batch size
+num_window_frames: 18
+num_window_step: 1
+dump_dir: ""  # Empty string by default
+ckpt_dir: "saved"
+dump_file_name: "celeb_withrot" #VoxCeleb2数据集
+lr: 1e-4  # Learning rate
+reg_lr: 0.0  # Weight decay
+drop_out: 0.5  # Drop out
+verbose: 1  # 0 - detail, 2 - simplify
+write: true  # Store true action
+
+add_pos: false  # Store true action
+use_motion_loss: false  # Store true action
+
+name: "tmp"
+puppet_name: DEMO_CH
+
+in_size: 80
+
+use_lip_weight: true  # Store false action
+lambda_mse_loss: 1.0
+show_animation: false  # Store true action
+show_progress: false
+
+# Model
+use_prior_net: true  # Store false action
+hidden_size: 256
+load_a2l_C_name: ""
+
+# Arch
+use_reg_as_std: true  # Store false action
+lambda_laplacian_smooth_loss: 1.0
+
+# Test
+test_emb: false  # Store true action
+train: true  # Store true action
+test_end2end: false  # Store true action
+
+# Save model
+jpg_freq: 1
+ckpt_epoch_freq: 1
+random_clip_num: 2
+
+# Train
+checkpoint_sub_dir: "/makeittalk" # 和overall.yaml里checkpoint_dir拼起来作为最终目录
+
+temp_sub_dir: "/makeittalk" # 和overall.yaml里temp_dir拼起来作为最终目录
+
+vshift: 15
+
+# generate_batch
+# jpg: "{}.jpg".format(default_head_name)
+jpg: "paint_boy.jpg"
+close_input_face_mouth: CLOSE_INPUT_FACE_MOUTH
+load_AUTOVC_name: "checkpoints/ckpt/ckpt_autovc.pth"
+load_a2l_G_name: "checkpoints/ckpt/ckpt_speaker_branch.pth"
+# load_a2l_C_name: "checkpoints/ckpt/ckpt_content_branch.pth"
+load_a2l_C_name: "saved/ckpt_last_epoch.pth"
+# load_my_a2l_C_name: "saved/ckpt_last_epoch.pth"
+load_G_name: "checkpoints/ckpt/ckpt_116_i2i_comb.pth"
+amp_lip_x: 2.0
+amp_lip_y: 2.0
+amp_pos: 0.5
+reuse_train_emb_list: [] # ['iWeklsXc0H8']
+add_audio_in: false
+comb_fan_awing: false
+output_folder: "dataset/examples"
+test_end2end: true
+dump_dir: ""
+pos_dim: 7
+use_prior_net: true
+transformer_d_model: 32
+transformer_N: 2
+transformer_heads: 2
+spk_emb_enc_size: 16
+init_content_encoder: ""
+lr: 1e-3
+reg_lr: 1e-6
+write: false
+segment_batch_size: 1
+emb_coef: 3.0
+lambda_laplacian_smooth_loss: 1.0
+use_11spk_only: false

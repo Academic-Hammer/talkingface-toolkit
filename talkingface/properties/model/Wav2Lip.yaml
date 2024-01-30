@@ -37,9 +37,9 @@ ngpu: 1
 
 
 # Train
-checkpoint_sub_dir: "/wav2lip" # 和overall.yaml里checkpoint_dir拼起来作为最终目录
+checkpoint_sub_dir: "/wav2lip" # 和overall.yaml里checkpoint_dir拼起来作为最终目录 saved/
 
-temp_sub_dir: "/wav2lip" # 和overall.yaml里temp_dir拼起来作为最终目录
+temp_sub_dir: "/wav2lip" # 和overall.yaml里temp_dir拼起来作为最终目录 
 
 
 # Inference

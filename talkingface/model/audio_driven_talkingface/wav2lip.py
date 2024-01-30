@@ -271,7 +271,7 @@ class Wav2Lip(AbstractTalkingFace):
             audio_src = os.path.join(self.config['data_root'], file_src) + '.mp4'
             video = os.path.join(self.config['data_root'], file_src) + '.mp4'
 
-
+      
             ensure_dir(os.path.join(self.config['temp_dir']))
 
             command = 'ffmpeg -loglevel panic -y -i {} -strict -2 {}'.format(audio_src, os.path.join(self.config['temp_dir'], 'temp')+'.wav')
