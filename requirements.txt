@@ -111,3 +111,14 @@ wandb==0.15.12
 Werkzeug==3.0.1
 yapf==0.40.2
 zipp==3.17.0
+librosa==0.9.1
+numba
+numpy
+opencv-python==4.1.1.26
+torch>=1.1.0
+torchvision>=0.3.0
+tqdm>=4.45.0
+dlib
+scikit-image
+matplotlib
+h5py
