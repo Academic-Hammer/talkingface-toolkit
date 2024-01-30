@@ -8,14 +8,13 @@ import torch.nn.functional as F
 from talkingface.model.image_driven_talkingface.styleheat.utils import flow_util
 from talkingface.model.image_driven_talkingface.styleheat.styleheat.base_function import LayerNorm2d, ADAINHourglass
 
-
 class VideoWarper(nn.Module):
     def __init__(
         self
     ):
         super(VideoWarper, self).__init__()
         self.mapping_net = MappingNet(
-            coeff_nc=73,
+            coeff_nc=56,
             descriptor_nc=256,
             layer=3
         )

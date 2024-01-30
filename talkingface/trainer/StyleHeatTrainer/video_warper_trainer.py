@@ -5,15 +5,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from loss.gan_loss import GANLoss
-from loss.perceptual import PerceptualLoss
+from talkingface.model.image_driven_talkingface.styleheat.loss.gan_loss import GANLoss
+from talkingface.model.image_driven_talkingface.styleheat.loss.perceptual import PerceptualLoss
 from torchvision.ops import roi_align
-from utils.distributed import master_only_print as print
-from utils.misc import to_cuda
-from utils.trainer import accumulate
-from utils.landmark import get_landmark_bbox
-from utils.common import tensor2img
-from trainers.base_trainer import BaseTrainer
+from talkingface.model.image_driven_talkingface.styleheat.utils.distributed import master_only_print as print
+from talkingface.model.image_driven_talkingface.styleheat.utils.misc import to_cuda
+from talkingface.model.image_driven_talkingface.styleheat.utils.trainer import accumulate
+from talkingface.model.image_driven_talkingface.styleheat.utils.landmark import get_landmark_bbox
+from talkingface.model.image_driven_talkingface.styleheat.utils.common import tensor2img
+from talkingface.trainer.StyleHeatTrainer.base_trainer import BaseTrainer
 
 
 class VideoWarperTrainer(BaseTrainer):

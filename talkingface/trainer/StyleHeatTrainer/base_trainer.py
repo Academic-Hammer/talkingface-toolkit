@@ -3,12 +3,12 @@ import time
 import glob
 from tqdm import tqdm
 
-from utils.distributed import master_only_print as print
-from utils.distributed import master_only, get_rank
-from utils.trainer import accumulate
-from utils.meters import Meter, add_hparams
-from utils.misc import to_cuda
-from utils.lpips import LPIPS
+from talkingface.model.image_driven_talkingface.styleheat.utils.distributed import master_only_print as print
+from talkingface.model.image_driven_talkingface.styleheat.utils.distributed import master_only, get_rank
+from talkingface.model.image_driven_talkingface.styleheat.utils.trainer import accumulate
+from talkingface.model.image_driven_talkingface.styleheat.utils.meters import Meter, add_hparams
+from talkingface.model.image_driven_talkingface.styleheat.utils.misc import to_cuda
+from talkingface.model.image_driven_talkingface.styleheat.utils.lpips import LPIPS
 
 import torch
 import torch.nn as nn

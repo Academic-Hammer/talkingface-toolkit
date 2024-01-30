@@ -5,8 +5,8 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.tensorboard.summary import hparams
 
 
-from utils.distributed import master_only
-from utils.distributed import master_only_print as print
+from talkingface.model.image_driven_talkingface.styleheat.utils.distributed import master_only
+from talkingface.model.image_driven_talkingface.styleheat.utils.distributed import master_only_print as print
 
 LOG_WRITER = None
 LOG_DIR = None

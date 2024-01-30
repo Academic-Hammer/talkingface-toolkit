@@ -5,8 +5,8 @@ import os
 import math
 import time
 import torch
-from talkingface.data.dataset.audio_dataset import AudioDataset
-from talkingface.data.dataset.inference_dataset import TempVideoDataset, ImageDataset
+from talkingface.data.dataset.StyleHeat_dataset.audio_dataset import AudioDataset
+from talkingface.data.dataset.StyleHeat_dataset.inference_dataset import TempVideoDataset, ImageDataset
 from talkingface.model.image_driven_talkingface.styleheat.utils.video_preprocess.extract_3dmm import Extract3dmm
 
 

@@ -22,7 +22,7 @@ gen_optimizer:
         gamma: 0.2
 
 trainer:
-    type: trainers.video_warper_trainer::VideoWarperTrainer
+    type: talkingface.trainer.StyleHeatTrainer.video_warper_trainer::VideoWarperTrainer
     pretrain_warp_iteration: 200000
     loss_weight:
       weight_perceptual_warp: 1
@@ -38,7 +38,7 @@ trainer:
 
 
 model:
-    type: models.styleheat.warper::VideoWarper
+    type: talkingface.model.image_driven_talkingface.styleheat.styleheat.warper::VideoWarper
     mode: train_video_warper
     optimized_param: all
     from_scratch_param: all
@@ -46,8 +46,8 @@ model:
 
 # Data options.
 data:
-    type: data.vox_dataset::VoxDataset
-    path: ./dataset
+    type: talkingface.data.dataset.StyleHeat_dataset.vox_dataset::VoxDataset
+    path: ./dataset/StyleHeat
     resolution: 256
     semantic_radius: 13
     train:
