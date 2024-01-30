@@ -438,6 +438,8 @@ def create_dataset(config):
     module_path = ".".join(["talkingface.data.dataset", dataset_file_name])
     if importlib.util.find_spec(module_path, __name__):
         dataset_module = importlib.import_module(module_path, __name__)
+    else:
+        dataset_module = None  # Set it to None if the module is not found
     if dataset_module is None:
         raise ValueError(
             "`dataset_file_name` [{}] is not the name of an existing dataset.".format(dataset_file_name)

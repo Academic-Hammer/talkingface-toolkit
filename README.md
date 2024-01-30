@@ -1,210 +1,119 @@
-# talkingface-toolkit
-## 框架整体介绍
-### checkpoints
-主要保存的是训练和评估模型所需要的额外的预训练模型，在对应文件夹的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/checkpoints/README.md)有更详细的介绍
+# talkingface-toolkit-VideoReTalking
 
-### datset
-存放数据集以及数据集预处理之后的数据，详细内容见dataset里的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/dataset/README.md)
+<a href='https://arxiv.org/abs/2211.14758'><img src='https://img.shields.io/badge/ArXiv-2211.14758-red'></a> <a href='https://vinthony.github.io/video-retalking/'><img src='https://img.shields.io/badge/Project-Page-Green'></a>
 
-### saved
-存放训练过程中保存的模型checkpoint, 训练过程中保存模型时自动创建
+项目链接：https://github.com/OpenTalker/video-retalking
 
-### talkingface
-主要功能模块，包括所有核心代码
+论文链接：https://arxiv.org/abs/2211.14758
 
-#### config
-根据模型和数据集名称自动生成所有模型、数据集、训练、评估等相关的配置信息
-```
-config/
+------
 
-├── configurator.py
+## 项目介绍
 
-```
-#### data
-- dataprocess：模型特有的数据处理代码，（可以是对方仓库自己实现的音频特征提取、推理时的数据处理）。如果实现的模型有这个需求，就要建立一对应的文件
-- dataset：每个模型都要重载`torch.utils.data.Dataset` 用于加载数据。每个模型都要有一个`model_name+'_dataset.py'`文件. `__getitem__()`方法的返回值应处理成字典类型的数据。 <span style="color:red">(核心部分)</span>
-```
-data/
+目前关于音频驱动唇形同步的工作中，存在一些缺点。首先一方面的工作，不是通用模型，需要对目标说话人进行单独训练；另外一方面的工作，当前的通用模型生成出来的唇形模糊；并且它们都不支持情感编辑。作者解决了上述问题并提出一个新的模型。
 
-├── dataprocess
+作者受到wav2lip的启发提出了一种新的模型来用音频驱动嘴唇合成。在wav2lip中，需要输入两组（每组5帧）图像帧，一组是GroudTruth下半部分被mask住的，另外一组是原始视频中的随机5帧（与GroudTruth是不一样的）。Mask图像帧显而易见是我们音频需要驱动生成嘴唇的图像，而随机图像帧是为了给嘴唇生成提供姿势参考。作者提到，模型对于姿势参考的图像帧是十分敏感的，因为这些图像帧中含有的嘴唇信息会泄露给模型作为先验知识。如果直接使用随机图像帧作为姿势参考，生成的图像常常会产生不同步的结果。因此作者对于姿势参考的随机图像帧做了修改，中和了面部表情，再输入到模型作为姿势参考。按照这个思想，也可以使用修改后的高兴或者悲伤的面部表情作为姿势参考，自然而然可以产生相应情感的说话视频。
 
-| ├── wav2lip_process.py
+![pipeline](https://github.com/OpenTalker/video-retalking/raw/main/docs/static/images/pipeline.png?raw=true)
 
-| ├── xxxx_process.py
+------
 
-├── dataset
-
-| ├── wav2lip_dataset.py
-
-| ├── xxx_dataset.py
-```
-
-#### evaluate
-主要涉及模型评估的代码
-LSE metric 需要的数据是生成的视频列表
-SSIM metric 需要的数据是生成的视频和真实的视频列表
-
-#### model
-实现的模型的网络和对应的方法 <span style="color:red">（核心部分）</span>
-
-主要分三类：
-- audio-driven (音频驱动)
-- image-driven （图像驱动）
-- nerf-based （基于神经辐射场的方法）
+## 环境配置
 
 ```
-model/
-
-├── audio_driven_talkingface
-
-| ├── wav2lip.py
-
-├── image_driven_talkingface
-
-| ├── xxxx.py
-
-├── nerf_based_talkingface
-
-| ├── xxxx.py
-
-├── abstract_talkingface.py
-
+conda create -n talkingface python=3.8
+activate talkingface
+conda install ffmpeg
+pip install torch==1.13.1+cu116 torchvision==0.14.1+cu116 torchaudio==0.13.1+cu116 -f https://download.pytorch.org/whl/torch_stable.html  
+pip install cmake -i http://pypi.douban.com/simple --trusted-host pypi.douban.com
+pip install -r requirements.txt -i http://pypi.douban.com/simple --trusted-host pypi.douban.com
 ```
 
-#### properties
-保存默认配置文件，包括：
-- 数据集配置文件
-- 模型配置文件
-- 通用配置文件
+------
 
-需要根据对应模型和数据集增加对应的配置文件，通用配置文件`overall.yaml`一般不做修改
-```
-properties/
-
-├── dataset
-
-| ├── xxx.yaml
-
-├── model
-
-| ├── xxx.yaml
-
-├── overall.yaml
+## 使用依赖
 
 ```
-
-#### quick_start
-通用的启动文件，根据传入参数自动配置数据集和模型，然后训练和评估（一般不需要修改）
-```
-quick_start/
-
-├── quick_start.py
-
-```
-
-#### trainer
-训练、评估函数的主类。在trainer中，如果可以使用基类`Trainer`实现所有功能，则不需要写一个新的。如果模型训练有一些特有部分，则需要重载`Trainer`。需要重载部分可能主要集中于: `_train_epoch()`, `_valid_epoch()`。 重载的`Trainer`应该命名为：`{model_name}Trainer`
-```
-trainer/
-
-├── trainer.py
-
-```
-
-#### utils
-公用的工具类，包括`s3fd`人脸检测，视频抽帧、视频抽音频方法。还包括根据参数配置找对应的模型类、数据类等方法。
-一般不需要修改，但可以适当添加一些必须的且相对普遍的数据处理文件。
-
-## 使用方法
-### 环境要求
-- `python=3.8`
-- `torch==1.13.1+cu116`（gpu版，若设备不支持cuda可以使用cpu版）
-- `numpy==1.20.3`
-- `librosa==0.10.1`
-
-尽量保证上面几个包的版本一致
-
-提供了两种配置其他环境的方法：
-```
-pip install -r requirements.txt
-
-or
-
-conda env create -f environment.yml
+basicsr==1.4.2
+kornia==0.5.1
+face-alignment==1.3.4
+ninja==1.10.2.3
+einops==0.4.1
+facexlib==0.2.5
+librosa==0.9.2
+dlib==19.24.0
+gradio>=3.7.0
+numpy==1.23.4
+scipy>=1.2.1
+scenedetect==0.5.1
+opencv-contrib-python
+python_speech_features
+ray==2.6.3
+colorlog==6.7.0
+texttable==1.7.0
 ```
 
-建议使用conda虚拟环境！！！
+------
 
-### 训练和评估
+## 快速开始
 
-```bash
-python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx)
+### 下载预训练模型
+
+下载预训练模型 [pre-trained models](https://pan.baidu.com/s/1WYWb1BYEz0Sbh0UwHjYLUQ?pwd=ga6o) 并放到`./checkpoints`路径下.
+
+### 数据集介绍
+
+作者在两个不同分辨率的数据集上评估了他们的框架：低分辨率数据集LRS2和高分辨率数据集HDTF。
+
+HDTF数据集包含来自YouTube的720p或1080p视频。
+
+根据Prajwal等人在2020年描述的未配对评估设置，作者选择了一个视频和另一个不同视频的音频片段来合成结果，这意味着视频和音频是不匹配的，以此来评估他们框架的性能。
+
+**由于HDTF数据集和LRS2数据集过大，而且本次项目仓库没有给出开源训练代码，因此主要是进行评估任务，所以只选择了部分数据**
+
+### 命令运行
+
+```
+python run_talkingface.py --model=video_retalking --dataset=video-retalking
 ```
 
-### 权重文件
+------
 
-- LSE评估需要的权重: syncnet_v2.model [百度网盘下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
-- wav2lip需要的lip expert 权重：lipsync_expert.pth [百度网下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
+## 实现功能
 
-## 可选论文：
-### Aduio_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| MakeItTalk | [paper](https://arxiv.org/abs/2004.12992) | [code](https://github.com/yzhou359/MakeItTalk) |
-| MEAD | [paper](https://wywu.github.io/projects/MEAD/support/MEAD.pdf) | [code](https://github.com/uniBruce/Mead) |
-| RhythmicHead | [paper](https://arxiv.org/pdf/2007.08547v1.pdf) | [code](https://github.com/lelechen63/Talking-head-Generation-with-Rhythmic-Head-Motion) |
-| PC-AVS | [paper](https://arxiv.org/abs/2104.11116) | [code](https://github.com/Hangz-nju-cuhk/Talking-Face_PC-AVS) |
-| EVP | [paper](https://openaccess.thecvf.com/content/CVPR2021/papers/Ji_Audio-Driven_Emotional_Video_Portraits_CVPR_2021_paper.pdf) | [code](https://github.com/jixinya/EVP) |
-| LSP | [paper](https://arxiv.org/abs/2109.10595) | [code](https://github.com/YuanxunLu/LiveSpeechPortraits) |
-| EAMM | [paper](https://arxiv.org/pdf/2205.15278.pdf) | [code](https://github.com/jixinya/EAMM/) |
-| DiffTalk | [paper](https://arxiv.org/abs/2301.03786) | [code](https://github.com/sstzal/DiffTalk) |
-| TalkLip | [paper](https://arxiv.org/pdf/2303.17480.pdf) | [code](https://github.com/Sxjdwang/TalkLip) |
-| EmoGen | [paper](https://arxiv.org/pdf/2303.11548.pdf) | [code](https://github.com/sahilg06/EmoGen) |
-| SadTalker | [paper](https://arxiv.org/abs/2211.12194) | [code](https://github.com/OpenTalker/SadTalker) |
-| HyperLips | [paper](https://arxiv.org/abs/2310.05720) | [code](https://github.com/semchan/HyperLips) |
-| PHADTF | [paper](http://arxiv.org/abs/2002.10137) | [code](https://github.com/yiranran/Audio-driven-TalkingFace-HeadPose) |
-| VideoReTalking | [paper](https://arxiv.org/abs/2211.14758) | [code](https://github.com/OpenTalker/video-retalking#videoretalking--audio-based-lip-synchronization-for-talking-head-video-editing-in-the-wild-)
-|                                 |
+- [x] 模型重构嵌入框架
+- [x] 数据预处理
+- [x] 基于预训练模型生成推理结果
+- [x] 仅在命令行输入模型和数据集名称就可以完成推理并对结果进行评估
+
+**因为原论文代码并未给出训练代码，并且已经给出了预训练网络模型，因此本次任务只利用论文代码在talkingface框架内完成推理并对结果进行评估**
+
+### 推理结果
+
+**原视频**
+
+https://private-user-images.githubusercontent.com/131352806/300726503-92546f52-37b3-4e2c-a829-c7ff9f8ba920.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDY2MDI0ODAsIm5iZiI6MTcwNjYwMjE4MCwicGF0aCI6Ii8xMzEzNTI4MDYvMzAwNzI2NTAzLTkyNTQ2ZjUyLTM3YjMtNGUyYy1hODI5LWM3ZmY5ZjhiYTkyMC5tcDQ_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjQwMTMwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI0MDEzMFQwODA5NDBaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT04MDI3NWJiNTc1NThmN2JjNzg1NjUzNDY2ZmViM2RhN2RkZjI1YzA3NDNjNDMyMzU0Y2U4MmRmNTIwN2U0NDkwJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZhY3Rvcl9pZD0wJmtleV9pZD0wJnJlcG9faWQ9MCJ9.qRaxyZf7MZBKiiRDrkwEwmRHaB9_0l6J5XfGrJJt5Xs
+
+**推理结果**
+
+https://private-user-images.githubusercontent.com/131352806/300726419-593b53f5-6019-4352-a093-7207449db96f.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDY2MDI0ODAsIm5iZiI6MTcwNjYwMjE4MCwicGF0aCI6Ii8xMzEzNTI4MDYvMzAwNzI2NDE5LTU5M2I1M2Y1LTYwMTktNDM1Mi1hMDkzLTcyMDc0NDlkYjk2Zi5tcDQ_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjQwMTMwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI0MDEzMFQwODA5NDBaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT02OGQxMGRjNDdmZTU3ODY5MDVhNDgzODY2ODZlNDhhMTI1ZjJiNDkwYWEwNmE1NWUzNGFlNmYzMzQ2YmFkZjQzJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZhY3Rvcl9pZD0wJmtleV9pZD0wJnJlcG9faWQ9MCJ9.frTPhUbgf4l7t5qDIsCV-XYGAdhCWfk65B3G61zxbrY
 
 
+### 命令运行截图（包括评估结果）
 
-### Image_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| PIRenderer | [paper](https://arxiv.org/pdf/2109.08379.pdf) | [code](https://github.com/RenYurui/PIRender) |
-| StyleHEAT | [paper](https://arxiv.org/pdf/2203.04036.pdf) | [code](https://github.com/OpenTalker/StyleHEAT) |
-| MetaPortrait | [paper](https://arxiv.org/abs/2212.08062) | [code](https://github.com/Meta-Portrait/MetaPortrait) |
-|                                 |
-### Nerf-based talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| AD-NeRF | [paper](https://arxiv.org/abs/2103.11078) | [code](https://github.com/YudongGuo/AD-NeRF) |
-| GeneFace | [paper](https://arxiv.org/abs/2301.13430) | [code](https://github.com/yerfor/GeneFace) |
-| DFRF | [paper](https://arxiv.org/abs/2207.11770) | [code](https://github.com/sstzal/DFRF) |
-|                                 |
-### text_to_speech
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| VITS | [paper](https://arxiv.org/abs/2106.06103) | [code](https://github.com/jaywalnut310/vits) |
-| Glow TTS | [paper](https://arxiv.org/abs/2005.11129) | [code](https://github.com/jaywalnut310/glow-tts) |
-| FastSpeech2 | [paper](https://arxiv.org/abs/2006.04558v1) | [code](https://github.com/ming024/FastSpeech2) |
-| StyleTTS2 | [paper](https://arxiv.org/abs/2306.07691) | [code](https://github.com/yl4579/StyleTTS2) |
-| Grad-TTS | [paper](https://arxiv.org/abs/2105.06337) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/Grad-TTS) | 
-| FastSpeech | [paper](https://arxiv.org/abs/1905.09263) | [code](https://github.com/xcmyz/FastSpeech) |
-|                                 |
-### voice_conversion
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| StarGAN-VC | [paper](http://www.kecl.ntt.co.jp/people/kameoka.hirokazu/Demos/stargan-vc2/index.html) | [code](https://github.com/kamepong/StarGAN-VC) |
-| Emo-StarGAN | [paper](https://www.researchgate.net/publication/373161292_Emo-StarGAN_A_Semi-Supervised_Any-to-Many_Non-Parallel_Emotion-Preserving_Voice_Conversion) | [code](https://github.com/suhitaghosh10/emo-stargan) |
-| adaptive-VC | [paper](https://arxiv.org/abs/1904.05742) | [code](https://github.com/jjery2243542/adaptive_voice_conversion) |
-| DiffVC | [paper](https://arxiv.org/abs/2109.13821) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/DiffVC) |
-| Assem-VC | [paper](https://arxiv.org/abs/2104.00931) | [code](https://github.com/maum-ai/assem-vc) |
-|               |
+**具体过程在演示视频中体现**
 
-## 作业要求
-- 确保可以仅在命令行输入模型和数据集名称就可以训练、验证。（部分仓库没有提供训练代码的，可以不训练）
-- 每个组都要提交一个README文件，写明完成的功能、最终实现的训练、验证截图、所使用的依赖、成员分工等。
+![运行截图1](https://github.com/dndnda/talkingface-toolkit/blob/main/%E8%BF%90%E8%A1%8C%E6%88%AA%E5%9B%BE/%E8%BF%90%E8%A1%8C%E6%88%AA%E5%9B%BE1.jpg?raw=true)
+
+![运行截图2](https://github.com/dndnda/talkingface-toolkit/blob/main/%E8%BF%90%E8%A1%8C%E6%88%AA%E5%9B%BE/%E8%BF%90%E8%A1%8C%E6%88%AA%E5%9B%BE2.jpg?raw=true)
 
 
+
+## 成员分工
+
+张泽渊：论文阅读，推理文件重构，测试代码与纠错，参与相关讨论，参与撰写开发文档
+
+陈则瑜：论文阅读，源项目代码梳理分析，数据整理，参与相关讨论，撰写开发文档
+
+李明：论文阅读，研究评估部分代码，可行性分析，参与相关讨论
 

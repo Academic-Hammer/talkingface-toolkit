@@ -1,0 +1,42 @@
+Tue 30 Jan 2024 11:57:46 INFO  ['run_talkingface.py', '--model=video_retalking', '--dataset=video-retalking']
+Tue 30 Jan 2024 11:57:46 INFO  
+General Hyper Parameters:
+gpu_id = 3, 4, 5
+use_gpu = True
+seed = 2023
+checkpoint_dir = saveddefault_checkpoint_sub_dir
+show_progress = True
+log_wandb = False
+reproducibility = True
+
+Training Hyper Parameters:
+epochs = 300
+train_batch_size = 2048
+learner = adam
+learning_rate = 0.0001
+eval_step = 1
+stopping_step = 10
+weight_decay = 0.0
+
+Evaluation Hyper Parameters:
+metrics = ['LSE', 'SSIM']
+evaluate_batch_size = 50
+lse_checkpoint_path = checkpoints/LSE/syncnet_v2.model
+temp_dir = results/tempdefault_temp_sub_dir
+valid_metric_bigger = False
+
+Other Hyper Parameters: 
+worker = 0
+shuffle = True
+device = cuda
+saved = True
+resume = True
+train = True
+lse_reference_dir = lse
+checkpoint_sub_dir = default_checkpoint_sub_dir
+temp_sub_dir = default_temp_sub_dir
+
+
+Tue 30 Jan 2024 11:57:46 INFO  video_retalking()
+Trainable parameters: 0
+Tue 30 Jan 2024 11:57:51 INFO  {'lse': {'LSE-C: 0.8277473449707031', 'LSE-D: 12.956426620483398'}, 'ssim': 0.9842861928349161}
