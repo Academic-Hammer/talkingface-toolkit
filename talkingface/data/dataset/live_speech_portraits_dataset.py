@@ -721,7 +721,7 @@ class FaceDataset(BaseDataset):
             return img.crop((min_x, min_y, max_x, max_y))
 
     def __len__(self):
-        if self.opt.isTrain:
+        if self.opt.train:
             return self.total_len
         else:
             return 1
