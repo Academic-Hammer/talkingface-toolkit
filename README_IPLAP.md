@@ -202,7 +202,7 @@ python talkingface/model/audio_driven_talkingface/IPLAP/train_video_renderer.py 
 
 ## 评估
 
-从[jianguoyun](https://www.jianguoyun.com/p/DeXpK34QgZ-EChjI9YcFIAA)下载预训练参数, 并将它们放置到 `talkingface/model/audio_driven_talkingface/IPLAP/test/checkpoints`中（两个模型的预训练模型均不大，已提前放置好并成功上传GitHub） 。然后运行以下命令：
+从[jianguoyun](https://www.jianguoyun.com/p/DeXpK34QgZ-EChjI9YcFIAA)下载预训练参数, 并将它们放置到 `talkingface/model/audio_driven_talkingface/IPLAP/test/checkpoints`中。然后运行以下命令：
 
 ```
 python talkingface/model/audio_driven_talkingface/IPLAP/inference_single.py
