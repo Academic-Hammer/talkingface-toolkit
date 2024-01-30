@@ -8,9 +8,9 @@
 # 运行指令
 总指令：python run_talkingface.py --model stargan --dataset vctk
 
-使用数据的指令：例如，当训练时说要用数据集，输入StarganDataset(config, config['train_filelist'])能调用train数据集
+使用数据的指令：例如，当训练时要用对应的数据集，输入StarganDataset(config, config['train_filelist'])能调用train数据集
 # 实现功能
-数据部分：按照stargan的源码进行数据预处理；划分数据集，按照80%、10%、10%的比例划分了三个数据集，生成了test.txt、train.txt、val.txt等文件，保存在dataset文件夹中。
+数据部分：按照stargan的源码进行数据预处理，提取mel谱，转化为可用形式；划分数据集，按照80%、10%、10%的比例划分了三个数据集，生成了test.txt、train.txt、val.txt等文件，保存在dataset文件夹中。
 # 结果截图
 ![](./md_img/1.jpg)
 ![](./md_img/2.jpg)
