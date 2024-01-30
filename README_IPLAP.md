@@ -2,7 +2,7 @@
 
 > **陶雪松     1120210485**
 
-<img alt="Static Badge" src="https://img.shields.io/badge/build-passing-green"><img alt="Static Badge" src="https://img.shields.io/badge/language-python-orange">
+<img alt="Static Badge" src="https://img.shields.io/badge/build-passing-green"> <img alt="Static Badge" src="https://img.shields.io/badge/language-python-orange">
 
 原论文链接：[[Paper]](https://arxiv.org/abs/2305.08293) 
 
