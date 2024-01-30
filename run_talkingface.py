@@ -19,6 +19,6 @@ if __name__ == "__main__":
     run(
         args.model,
         args.dataset,
-        config_file_list=config_file_list,
-        evaluate_model_file=args.evaluate_model_file
+        #config_file_list=config_file_list,
+        #evaluate_model_file=args.evaluate_model_file
     )
