@@ -78,7 +78,11 @@ GitHub代码仓库中本身提供了三个txt文件，指定数据集是LJSPeech
 
 
 ## 运行说明
+### 解压一个文件
+请先把Utils/ASR/epoch_00080.zip解压到当前目录再继续，GitHub客户端似乎无法上传.pth文件，但这个是运行所需的，所以就打包了一下。
+
 ### 运行准备
+
 从头开始进行train_first较为耗时，且容易出现nan问题和其他报错，我们复现train_second来进行更加稳定的训练
 
 运行download.ipynb单元格内容，下载所需预训练模型到checkpoints作为first_stage产物，为稳定训练做准备。
@@ -180,7 +184,7 @@ git+https://github.com/resemble-ai/monotonic_align.git
 
 王之禾：部分数据集加载重构，参与讨论相关，撰写使用报告。  
 
-陈锦超：部分loss计算，参与讨论相关，撰写使用报告。  
+陈锦超：部分loss计算，部分优化器相关，参与讨论相关，撰写使用报告。  
 
 胡雨轩：部分模型方法重构，参与讨论相关，撰写实验报告。  
 
