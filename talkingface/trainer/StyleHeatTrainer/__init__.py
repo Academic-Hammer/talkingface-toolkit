@@ -1,0 +1,1 @@
+from talkingface.trainer.StyleHeatTrainer import trainer_warpped

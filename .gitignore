@@ -3,6 +3,8 @@
 dataset/lrs2
 dataset/lrw
 dataset/mead
+dataset/*
+checkpoints/*
 log
 log_tensorboard
 results

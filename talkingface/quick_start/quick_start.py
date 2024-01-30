@@ -21,6 +21,7 @@ from talkingface.utils import (
     create_dataset
 )
 
+
 def run(
         model,
         dataset,
@@ -38,6 +39,7 @@ def run(
         evaluate_model_file=evaluate_model_file,
     )
     return res
+
 
 def run_talkingface(
         model=None,
@@ -57,7 +59,36 @@ def run_talkingface(
         saved (bool, optional): Whether to save the model. Defaults to ``True``.
         queue (torch.multiprocessing.Queue, optional): The queue used to pass the result to the main process. Defaults to ``None``.
     """
-
+    if model.lower() == "styleheat":
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--run_mode", type=str, default="", help="train or infer")
+        args, _ = parser.parse_known_args()
+        if args.run_mode == "infer":
+            from talkingface.quick_start.inference import run_infer
+            print("Style Heat Infer")
+            run_infer()
+            return
+        else:
+            from talkingface.trainer.StyleHeatTrainer.trainer_warpped import fit as _fit,parse_args as _parse_args
+            import talkingface.data.dataset.StyleHeat_dataset as Dataset
+            from talkingface.model.image_driven_talkingface.styleheat.utils.trainer import  set_random_seed
+            from talkingface.config.config import Config as _Config
+            # config
+            _args,_ = _parse_args()
+            opt = _Config(_args.config, _args, is_train=True)
+            opt.device = 'cuda'
+            opt.local_rank = 0
+            opt.distributed = False
+            opt.data.train.distributed = False
+            opt.data.val.distributed = False
+            # set random seed
+            set_random_seed(_args.seed)
+            # get data
+            val_dataset, train_dataset = Dataset.get_train_val_dataloader(opt.data)
+            # train
+            _fit(args=_args, opt=opt,train_data=train_dataset,valid_data=val_dataset)
+            return
     config = Config(
         model=model,
         dataset=dataset,
@@ -70,9 +101,10 @@ def run_talkingface(
     logger.info(sys.argv)
     logger.info(config)
 
-    #data processing
+    # data processing
     # print(not (os.listdir(config['preprocessed_root'])))
-    if config['need_preprocess'] and (not (os.path.exists(config['preprocessed_root'])) or not (os.listdir(config['preprocessed_root']))):
+    if config['need_preprocess'] and (
+            not (os.path.exists(config['preprocessed_root'])) or not (os.listdir(config['preprocessed_root']))):
         get_preprocess(config['dataset'])(config).run()
 
     train_dataset, val_dataset = create_dataset(config)
@@ -98,8 +130,4 @@ def run_talkingface(
         print("error: no model file to evaluate without training")
         return
     # model evaluating
-    trainer.evaluate(model_file = evaluate_model_file)
-
-    
-
-
+    trainer.evaluate(model_file=evaluate_model_file)
