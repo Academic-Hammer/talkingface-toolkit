@@ -207,4 +207,34 @@ python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx
 - 每个组都要提交一个README文件，写明完成的功能、最终实现的训练、验证截图、所使用的依赖、成员分工等。
 
 
+##小组README文件
+###张卓远
+编写实现了模型的数据预处理和数据加载代码，编写实现了模型emo_disc部分模型。
+运行步骤：
+进入talkingface/data/dataprocess/文件夹下运行控制台，输入命令
+python emogen_dataprocess.py --inputfolder <folder_of_dataset> --preprocessed_root <output_folder_for_preprocessed_dataset/>
+预处理会先将视频转化为25帧格式，此过程需要安装ffmpeg并添加为环境变量。
+并将转化好的视频存入./modified_videos文件夹下
+<img width="1280" alt="数据预处理第一步转换FPS演示结果" src="https://github.com/zhangyuanyuan02/talkingface-toolkit/assets/103866519/11d41884-5fc6-4af1-8664-2bb58e54db30">
+<img width="1276" alt="转换视频FPS结果" src="https://github.com/zhangyuanyuan02/talkingface-toolkit/assets/103866519/1b751036-dbea-47b6-b3a3-fa82a8c711a7">
+程序会自动运行数据预处理第二步：
+<img width="1280" alt="数据预处理第二步演示" src="https://github.com/zhangyuanyuan02/talkingface-toolkit/assets/103866519/a2eba2fb-ca15-419e-896d-fe7665474ca9">
+由于本机内存空间不足转为使用其他云服务器测试，完成数据预处理的过程。
+<img width="1280" alt="预处理内存空间不足报错" src="https://github.com/zhangyuanyuan02/talkingface-toolkit/assets/103866519/d393514c-8107-495a-a4f9-d7da15acc063">
+<img width="578" alt="预处理完成演示" src="https://github.com/zhangyuanyuan02/talkingface-toolkit/assets/103866519/16264f1c-188c-463a-a2f0-db03aa9faf03">
+
+接下来训练情绪鉴别器：
+
+<img width="572" alt="训练情绪鉴别器结果演示" src="https://github.com/zhangyuanyuan02/talkingface-toolkit/assets/103866519/3c7e3c19-0939-4c41-a4b8-7f4489026fdc">
+
+由于训练过程过长，可以在中途输入Ctrl^C以停止训练
+
+
+
+
+
+
+
+
+
 
