@@ -26,6 +26,58 @@ python run_talkingface.py --model stargan --dataset vctk
 
 
 ## 实现功能
+train_stargan_model.py
+###Imports: 
+Import necessary libraries and modules, including PyTorch, TorchVision, and other utilities.
+
+###Data Preprocessing:
+
+walk_files Function: Recursively walks through a directory and yields file paths with a specified extension.
+logmelfilterbank Function: Computes mel spectrogram features from audio data using librosa.
+extract_melspec Function: Extracts mel spectrogram features from audio files and saves them in HDF5 format.
+
+###Feature Normalization:
+
+normalize_features Function: Normalizes mel spectrogram features using StandardScaler and saves the normalized features in HDF5 format.
+
+###Compute Statistics:
+
+compute_statistics Function: Computes and saves statistics (mean and standard deviation) of mel spectrogram features for normalization.
+
+###Model Training:
+
+train_stargan Function: Defines the StarGAN model architecture (generator and discriminator) and trains the model.
+The script uses a parallelized approach (joblib) to extract mel spectrogram features and normalize them.
+The training loop includes the generator and discriminator updates, loss computation, and logging of training progress.
+
+###Configuration and Logging:
+
+Various parameters such as data paths, model configurations, and training hyperparameters are set at the beginning of the script.
+Logging is used to record training progress, and a configuration file is saved for reproducibility.
+
+###Main Execution:
+
+The script concludes with the main execution of the train_stargan function.
+
+
+
+run_talkingface.py
+###Import necessary modules:
+
+argparse: Used for parsing command-line arguments.
+train_stargan_model from models.stargan: Presumably, this function is responsible for training the StarGAN model. (Note: The import is commented out.)
+
+###Define the run function:
+
+Takes in arguments like model_name, dataset_name, config_file_list, evaluate_model_file, and train.
+Checks if the train flag is True and if the model_name is 'stargan', then calls the train_stargan_model function.
+
+###Check if the script is being run as the main module:
+
+If true, use argparse to parse command-line arguments.
+Set default values for various arguments.
+Split the config_files argument into a list if provided.
+Call the run function with the parsed arguments.
 
 
 
