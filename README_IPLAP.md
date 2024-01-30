@@ -26,7 +26,7 @@ librosa==0.9.2
 
 ## 模型简介
 
-![framework](.\md_pictures\framework.png)
+![framework](./md_pictures/framework.png)
 
 IPLAP实现了一个包含音频到特征点生成和特征点到视频渲染的两阶段框架。首先，模型利用一个基于Transformer的特征点生成器，从音频中推断出嘴唇和下颌的特征点。在这一过程中，模型使用发言者面部的姿态先验特征，使生成的特征点与发言者的面部轮廓一致。之后，模型通过视频渲染器，将生成的特征点转换为面部图像。在这个阶段，模型将从下半部分被遮挡的目标面部和静态参考图像中提取先验外观信息，这有助于生成逼真且保留身份信息的视觉内容。为了有效探索静态参考图像的先验信息，视频渲染器根据运动场将静态参考图像与目标面部的姿态和表情对齐，并且再次使用音频中提取到的听觉特征以确保生成的面部图像与音频保持同步。经过复现与测试，相较于其他传统方法，该模型的确能够产生更为逼真、嘴唇同步且保留身份信息的视频。
 
@@ -48,49 +48,49 @@ python run_talkingface.py --model=IPLAP –dataset=lrs2
 
 运行程序后，输出信息如下所示：
 
-![img_5](.\md_pictures\img_5.png)
+![img_5](./md_pictures/img_5.png)
 
-![img_6](.\md_pictures\img_6.png)
+![img_6](./md_pictures/img_6.png)
 
-![image-20240130173802565](.\md_pictures\img_17.png)
+![image-20240130173802565](./md_pictures/img_17.png)
 
-![img_7](.\md_pictures\img_7.png)
+![img_7](./md_pictures/img_7.png)
 
-![img_8](.\md_pictures\img_8.png)
+![img_8](./md_pictures/img_8.png)
 
-![img_9](.\md_pictures\img_9.png)
+![img_9](./md_pictures/img_9.png)
 
 等待评估结束后（预留的测试视频一般需要处理15-20分钟左右），程序输出信息与评估结果如下：
 
-![img_10](.\md_pictures\img_10.png)
+![img_10](./md_pictures/img_10.png)
 
-![img_11](.\md_pictures\img_11.png)
+![img_11](./md_pictures/img_11.png)
 
-![img_12](.\md_pictures\img_12.png)
+![img_12](./md_pictures/img_12.png)
 
-![img_13](.\md_pictures\img_13.png)
+![img_13](./md_pictures/img_13.png)
 
-![img_14](.\md_pictures\img_14.png)
+![img_14](./md_pictures/img_14.png)
 
 最终可以在`tempfile_of_test_result`文件夹中查看中间文件，在`test_result`文件夹中查看生成结果。
 
-![img_15](.\md_pictures\img_15.png)
+![img_15](./md_pictures/img_15.png)
 
-![img_16](.\md_pictures\img_16.png)
+![img_16](./md_pictures/img_16.png)
 
 最终生成Talking Face视频的效果展示如下（均保留了人脸草图）：
 
 这是LRS2数据集中的第129个视频中处理得到的人脸图像基于我所截取的一段外国新闻语音生成的视频。
 
-<video src=".\test_result\129result_N_25_Nl_15.mp4"></video>
+<video src="./test_result/129result_N_25_Nl_15.mp4"></video>
 
 以下视频的人像来自于我所截取的中国新闻联播的视频片段，视频的语音使用了和上一个视频相同的外国新闻语音。
 
-<video src=".\test_result\test2result_N_25_Nl_15.mp4"></video>
+<video src="./test_result/test2result_N_25_Nl_15.mp4"></video>
 
 以下视频的人像来自于我所截取的外国新闻节目的视频片段，视频的语音使用了截取自另一段访谈节目的男性语音。
 
-<video src=".\test_result\test1result_N_25_Nl_15.mp4"></video>
+<video src="./test_result/test1result_N_25_Nl_15.mp4"></video>
 
 
 
@@ -128,9 +128,9 @@ python preprocess_audio.py --data_root ....../lrs2/ --out_root ..../lrs2_audio
 ```
 处理完成后的效果(带有数据集时预处理较慢，此截图为处理空数据集结果)
 
-![img1](.\md_pictures\img_0.png)
+![img1](./md_pictures/img_0.png)
 
-![img](.\md_pictures\img.png)
+![img](./md_pictures/img.png)
 
 ### 预处理视频的面部
 
@@ -148,9 +148,9 @@ python preprocess_video.py --dataset_video_root ....../lrs2/ --output_sketch_roo
 
 处理完成后的效果(带有数据集时预处理较慢，此截图为处理空数据集结果)
 
-![img_1](.\md_pictures\img_1.png)
+![img_1](./md_pictures/img_1.png)
 
-![img_2](.\md_pictures\img_2.png)
+![img_2](./md_pictures/img_2.png)
 
 ### 训练特征点生成器
 
@@ -166,7 +166,7 @@ python talkingface/model/audio_driven_talkingface/IPLAP/train_landmarks_generato
 
 读取train.txt文件，开始训练时输出如下：
 
-![img_3](.\md_pictures\img_3.png)
+![img_3](./md_pictures/img_3.png)
 
 ### 训练视频渲染器
 
@@ -184,7 +184,7 @@ python talkingface/model/audio_driven_talkingface/IPLAP/train_video_renderer.py 
 
 **注意：**开始训练后，一些相关网络权重将自动从GitHub上在线下载，请确保网络能够连接上GitHub！
 
-![img_4](.\md_pictures\img_4.png)
+![img_4](./md_pictures/img_4.png)
 
 训练相关信息保留在`tensorboard_runs`文件夹中。
 
