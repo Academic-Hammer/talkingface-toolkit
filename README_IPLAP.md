@@ -82,15 +82,27 @@ python run_talkingface.py --model=IPLAP –dataset=lrs2
 
 这是LRS2数据集中的第129个视频中处理得到的人脸图像基于我所截取的一段外国新闻语音生成的视频。
 
-<video src="./test_result/129result_N_25_Nl_15.mp4"></video>
+
+
+https://github.com/Tao-xuesong/talkingface-toolkit/assets/104686841/5093e1de-f58d-4ce4-ac77-d4b11926a6e0
+
+
 
 以下视频的人像来自于我所截取的中国新闻联播的视频片段，视频的语音使用了和上一个视频相同的外国新闻语音。
 
-<video src="./test_result/test2result_N_25_Nl_15.mp4"></video>
+
+
+https://github.com/Tao-xuesong/talkingface-toolkit/assets/104686841/cf68236e-9d5a-4116-ad58-2ca5fe49878d
+
+
 
 以下视频的人像来自于我所截取的外国新闻节目的视频片段，视频的语音使用了截取自另一段访谈节目的男性语音。
 
-<video src="./test_result/test1result_N_25_Nl_15.mp4"></video>
+
+
+
+https://github.com/Tao-xuesong/talkingface-toolkit/assets/104686841/491df4d5-76c2-452e-8494-02dbf1d52e52
+
 
 
 
