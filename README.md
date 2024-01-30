@@ -1,210 +1,209 @@
-# talkingface-toolkit
-## 框架整体介绍
-### checkpoints
-主要保存的是训练和评估模型所需要的额外的预训练模型，在对应文件夹的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/checkpoints/README.md)有更详细的介绍
+# talkingface-toolkit-PCAVS
 
-### datset
-存放数据集以及数据集预处理之后的数据，详细内容见dataset里的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/dataset/README.md)
+<img alt="Static Badge" src="https://img.shields.io/badge/build-passing-green"><img alt="Static Badge" src="https://img.shields.io/badge/language-python-orange">
 
-### saved
-存放训练过程中保存的模型checkpoint, 训练过程中保存模型时自动创建
+原论文链接：https://arxiv.org/abs/2104.11116
 
-### talkingface
-主要功能模块，包括所有核心代码
+源代码链接：https://github.com/Hangz-nju-cuhk/Talking-Face_PC-AVS
 
-#### config
-根据模型和数据集名称自动生成所有模型、数据集、训练、评估等相关的配置信息
-```
-config/
 
-├── configurator.py
+## 目录
+  - [完成功能](#完成功能)
+  - [验证截图](#验证截图)
+  - [使用依赖](#使用依赖)
+  - [成员分工](#成员分工)
+  - [项目具体介绍](#项目具体介绍)
+    - [快速生成演示结果](#快速生成演示结果)
+    - [框架具体介绍](#框架具体介绍)
+  
 
-```
-#### data
-- dataprocess：模型特有的数据处理代码，（可以是对方仓库自己实现的音频特征提取、推理时的数据处理）。如果实现的模型有这个需求，就要建立一对应的文件
-- dataset：每个模型都要重载`torch.utils.data.Dataset` 用于加载数据。每个模型都要有一个`model_name+'_dataset.py'`文件. `__getitem__()`方法的返回值应处理成字典类型的数据。 <span style="color:red">(核心部分)</span>
-```
-data/
+## 完成功能
+该项目将 [PC-AVS(Pose-Controllable Talking Face Generation by
+Implicitly Modularized Audio-Visual Representation)](https://github.com/Hangz-nju-cuhk/Talking-Face_PC-AVS) 的论文代码移植到 talkingface-toolkit 框架中，主要完成了以下工作：
 
-├── dataprocess
+1. 修改，调整了原论文中的 BaseDataset 与 VOXTestDataset 类，使其符合框架要求。
+2. 理解并整理了原论文中有关推理的部分，将其整合进 talking-face 框架中，对模型进行评估(原论文代码不支持训练)
+3. 增加 util 中部分工具函数，方便实现部分功能
+4. 原论文代码采用封装 argparse 的方式，传递参数，为了符合整个框架，将参数传递方式修改为由 yaml 进行配置。
 
-| ├── wav2lip_process.py
 
-| ├── xxxx_process.py
+## 验证截图
 
-├── dataset
+![推理结果](./img/output.gif)
+这是使用原论文中的样例得到的推理结果。
 
-| ├── wav2lip_dataset.py
+![推理过程](./img/inference.png)
+推理过程截图
 
-| ├── xxx_dataset.py
-```
 
-#### evaluate
-主要涉及模型评估的代码
-LSE metric 需要的数据是生成的视频列表
-SSIM metric 需要的数据是生成的视频和真实的视频列表
+![验证截图](./img/eval.jpg)
+这是验证截图
+## 使用依赖
 
-#### model
-实现的模型的网络和对应的方法 <span style="color:red">（核心部分）</span>
+主体与框架保持一致,部分依赖有变化
 
-主要分三类：
-- audio-driven (音频驱动)
-- image-driven （图像驱动）
-- nerf-based （基于神经辐射场的方法）
-
-```
-model/
-
-├── audio_driven_talkingface
-
-| ├── wav2lip.py
-
-├── image_driven_talkingface
-
-| ├── xxxx.py
-
-├── nerf_based_talkingface
-
-| ├── xxxx.py
-
-├── abstract_talkingface.py
-
+```text
+librosa==0.9.1
+lws==1.2.8
+numpy==1.20.3
+ffmpeg>=4.0.0
 ```
 
-#### properties
-保存默认配置文件，包括：
-- 数据集配置文件
-- 模型配置文件
-- 通用配置文件
+## 成员分工
 
-需要根据对应模型和数据集增加对应的配置文件，通用配置文件`overall.yaml`一般不做修改
-```
-properties/
+| 成员 | 工作 |
+| ----- | -----|
+| 冯宇鹏 | 阅读论文，编写文档 README |
+| 李奕霖 | 阅读论文，修改整理框架代码(eval 部分的代码)|
+| 王宇璇 | 阅读论文，编写配置文件 yaml 文件等，编写文档 |
+| 徐宇飞 | 阅读论文，修改整理框架代码(dataset 部分的代码)|
+| 李嘉政 | 阅读论文，修改整理框架代码(util 部分的代码) |
 
-├── dataset
 
-| ├── xxx.yaml
+## 项目具体介绍
+PC-AVS(Pose-Controllable Talking Face Generation by
+Implicitly Modularized Audio-Visual Representation) 是一种姿态可控的声像系统，该系统可以实现对任意面孔在说话同时实现对姿态的自由控制。不从音频中学习姿势动作，而是利用另一个姿势源视频来补偿头部动作。该系统的关键是设计一个隐式的低维姿势代码，它没有嘴型或身份信息。通过这种方式，视听表征被模块化为三个关键因素的空间:语音内容、头部姿势和身份信息。
 
-├── model
 
-| ├── xxx.yaml
+原论文中项目演示截图与网络框架概述如图
 
-├── overall.yaml
+![demo.gif](./img/demo.gif)
+![method.png](./img/method.png)
 
-```
+### 快速生成演示结果
 
-#### quick_start
-通用的启动文件，根据传入参数自动配置数据集和模型，然后训练和评估（一般不需要修改）
-```
-quick_start/
-
-├── quick_start.py
-
-```
-
-#### trainer
-训练、评估函数的主类。在trainer中，如果可以使用基类`Trainer`实现所有功能，则不需要写一个新的。如果模型训练有一些特有部分，则需要重载`Trainer`。需要重载部分可能主要集中于: `_train_epoch()`, `_valid_epoch()`。 重载的`Trainer`应该命名为：`{model_name}Trainer`
-```
-trainer/
-
-├── trainer.py
-
-```
-
-#### utils
-公用的工具类，包括`s3fd`人脸检测，视频抽帧、视频抽音频方法。还包括根据参数配置找对应的模型类、数据类等方法。
-一般不需要修改，但可以适当添加一些必须的且相对普遍的数据处理文件。
-
-## 使用方法
-### 环境要求
-- `python=3.8`
-- `torch==1.13.1+cu116`（gpu版，若设备不支持cuda可以使用cpu版）
-- `numpy==1.20.3`
-- `librosa==0.10.1`
-
-尽量保证上面几个包的版本一致
-
-提供了两种配置其他环境的方法：
+使用 `pip` 搭建环境
 ```
 pip install -r requirements.txt
-
-or
-
-conda env create -f environment.yml
 ```
 
-建议使用conda虚拟环境！！！
+部分依赖有改动
+```text
+librosa==0.9.1
+lws==1.2.8
+numpy==1.20.3
+ffmpeg>=4.0.0
+```
 
-### 训练和评估
+![依赖安装](./img/build.jpg)
+相关依赖安装截图
+
+在 [checkpoints](#checkpoints) 一节中下载相关的预训练模型
+
+运行如下命令
 
 ```bash
-python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx)
+python run_talkingface.py --model=PC_AVS --dataset=PC_AVSDataset --evaluate_model_file ./checkpoints/PC_AVS/simple_model.pth --config_files ./talkingface/properties/model/PC_AVS.yaml
+```
+即可看到验证结果
+
+![eval.jpg](./img/eval.jpg)
+
+### 框架具体介绍
+
+
+#### checkpoints
+
+主要保存的是训练和评估模型所需要的额外的预训练模型，在对应文件夹的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/checkpoints/README.md)有更详细的介绍
+
+保存 PC-AVS 中使用到的五个预训练模型。
+
+下载 [链接](https://drive.google.com/file/d/1Zehr3JLIpzdg2S5zZrhIbpYPKF-4gKU_/view?usp=sharing) 中的 zip 文件，解压缩到 `checkpoints/PC_AVS/demo` 文件夹下。
+
+![model_pth.png](./img/model_pth.jpg)
+
+在 evaluate 过程中还会下载预训练模型保存在 checkpoints 中。
+![download_model.jpg](./img/download_model.jpg)
+
+#### datset
+
+存放数据集以及数据集预处理之后的数据，详细内容见dataset里的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/dataset/README.md)
+
+
+
+#### talkingface
+
+
+
+##### config
+
+将原论文代码中的 argparse 中 parser 对象中参数改为由 yaml 文件配置，部分参数如下：
+
+![config.png](./img/config.png)
+
+##### data
+`data` 文件夹结构如下：
+```text
+.
+├── __init__.py
+├── dataprocess
+│   ├── __init__.py
+│   ├── align_68.py
+│   ├── prepare_testing_files.py
+│   └── wav2lip_process.py
+└── dataset
+    ├── __init__.py
+    ├── dataset.py
+    ├── pc_avs_dataset.py
+    └── wav2lip_dataset.py
 ```
 
-### 权重文件
+我们支持自定义的数据集，使用方法如下：
 
-- LSE评估需要的权重: syncnet_v2.model [百度网盘下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
-- wav2lip需要的lip expert 权重：lipsync_expert.pth [百度网下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
+模型只处理类似voxceleb2的裁剪数据，因此需要预处理自准备数据。
 
-## 可选论文：
-### Aduio_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| MakeItTalk | [paper](https://arxiv.org/abs/2004.12992) | [code](https://github.com/yzhou359/MakeItTalk) |
-| MEAD | [paper](https://wywu.github.io/projects/MEAD/support/MEAD.pdf) | [code](https://github.com/uniBruce/Mead) |
-| RhythmicHead | [paper](https://arxiv.org/pdf/2007.08547v1.pdf) | [code](https://github.com/lelechen63/Talking-head-Generation-with-Rhythmic-Head-Motion) |
-| PC-AVS | [paper](https://arxiv.org/abs/2104.11116) | [code](https://github.com/Hangz-nju-cuhk/Talking-Face_PC-AVS) |
-| EVP | [paper](https://openaccess.thecvf.com/content/CVPR2021/papers/Ji_Audio-Driven_Emotional_Video_Portraits_CVPR_2021_paper.pdf) | [code](https://github.com/jixinya/EVP) |
-| LSP | [paper](https://arxiv.org/abs/2109.10595) | [code](https://github.com/YuanxunLu/LiveSpeechPortraits) |
-| EAMM | [paper](https://arxiv.org/pdf/2205.15278.pdf) | [code](https://github.com/jixinya/EAMM/) |
-| DiffTalk | [paper](https://arxiv.org/abs/2301.03786) | [code](https://github.com/sstzal/DiffTalk) |
-| TalkLip | [paper](https://arxiv.org/pdf/2303.17480.pdf) | [code](https://github.com/Sxjdwang/TalkLip) |
-| EmoGen | [paper](https://arxiv.org/pdf/2303.11548.pdf) | [code](https://github.com/sahilg06/EmoGen) |
-| SadTalker | [paper](https://arxiv.org/abs/2211.12194) | [code](https://github.com/OpenTalker/SadTalker) |
-| HyperLips | [paper](https://arxiv.org/abs/2310.05720) | [code](https://github.com/semchan/HyperLips) |
-| PHADTF | [paper](http://arxiv.org/abs/2002.10137) | [code](https://github.com/yiranran/Audio-driven-TalkingFace-HeadPose) |
-| VideoReTalking | [paper](https://arxiv.org/abs/2211.14758) | [code](https://github.com/OpenTalker/video-retalking#videoretalking--audio-based-lip-synchronization-for-talking-head-video-editing-in-the-wild-)
-|                                 |
+需要处理自己准备的数据[face-alignment](https://github.com/1adrianb/face-alignment)。运行即可安装
+```
+pip install face-alignment
+```
+
+假设视频已经通过前面的步骤 `prepare_testing_files.py`  处理到 ```[name]``` 文件夹中，
+你可以运行
+```
+python dataprocess/align_68.py --folder_path [name]
+```
+
+裁剪后的图像将保存在一个额外的 ```[name_cropped]``` 文件夹中。
 
 
+然后可以通过手动更改 demo.csv文件或更改目录文件夹路径并再次运行预处理文件。
 
-### Image_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| PIRenderer | [paper](https://arxiv.org/pdf/2109.08379.pdf) | [code](https://github.com/RenYurui/PIRender) |
-| StyleHEAT | [paper](https://arxiv.org/pdf/2203.04036.pdf) | [code](https://github.com/OpenTalker/StyleHEAT) |
-| MetaPortrait | [paper](https://arxiv.org/abs/2212.08062) | [code](https://github.com/Meta-Portrait/MetaPortrait) |
-|                                 |
-### Nerf-based talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| AD-NeRF | [paper](https://arxiv.org/abs/2103.11078) | [code](https://github.com/YudongGuo/AD-NeRF) |
-| GeneFace | [paper](https://arxiv.org/abs/2301.13430) | [code](https://github.com/yerfor/GeneFace) |
-| DFRF | [paper](https://arxiv.org/abs/2207.11770) | [code](https://github.com/sstzal/DFRF) |
-|                                 |
-### text_to_speech
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| VITS | [paper](https://arxiv.org/abs/2106.06103) | [code](https://github.com/jaywalnut310/vits) |
-| Glow TTS | [paper](https://arxiv.org/abs/2005.11129) | [code](https://github.com/jaywalnut310/glow-tts) |
-| FastSpeech2 | [paper](https://arxiv.org/abs/2006.04558v1) | [code](https://github.com/ming024/FastSpeech2) |
-| StyleTTS2 | [paper](https://arxiv.org/abs/2306.07691) | [code](https://github.com/yl4579/StyleTTS2) |
-| Grad-TTS | [paper](https://arxiv.org/abs/2105.06337) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/Grad-TTS) | 
-| FastSpeech | [paper](https://arxiv.org/abs/1905.09263) | [code](https://github.com/xcmyz/FastSpeech) |
-|                                 |
-### voice_conversion
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| StarGAN-VC | [paper](http://www.kecl.ntt.co.jp/people/kameoka.hirokazu/Demos/stargan-vc2/index.html) | [code](https://github.com/kamepong/StarGAN-VC) |
-| Emo-StarGAN | [paper](https://www.researchgate.net/publication/373161292_Emo-StarGAN_A_Semi-Supervised_Any-to-Many_Non-Parallel_Emotion-Preserving_Voice_Conversion) | [code](https://github.com/suhitaghosh10/emo-stargan) |
-| adaptive-VC | [paper](https://arxiv.org/abs/1904.05742) | [code](https://github.com/jjery2243542/adaptive_voice_conversion) |
-| DiffVC | [paper](https://arxiv.org/abs/2109.13821) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/DiffVC) |
-| Assem-VC | [paper](https://arxiv.org/abs/2104.00931) | [code](https://github.com/maum-ai/assem-vc) |
-|               |
+##### model
 
-## 作业要求
-- 确保可以仅在命令行输入模型和数据集名称就可以训练、验证。（部分仓库没有提供训练代码的，可以不训练）
-- 每个组都要提交一个README文件，写明完成的功能、最终实现的训练、验证截图、所使用的依赖、成员分工等。
+PC-AVS 网络结构较复杂, `model` 文件夹内结构如下：
+```text
+├── __init__.py
+├── av_model.py
+└── networks
+    ├── FAN_feature_extractor.py
+    ├── __init__.py
+    ├── architecture.py
+    ├── audio_network.py
+    ├── base_network.py
+    ├── discriminator.py
+    ├── encoder.py
+    ├── generator.py
+    ├── loss.py
+    ├── sync_batchnorm
+    │   ├── __init__.py
+    │   ├── batchnorm.py
+    │   ├── batchnorm_reimpl.py
+    │   ├── comm.py
+    │   ├── replicate.py
+    │   ├── scatter_gather.py
+    │   └── unittest.py
+    ├── util.py
+    └── vision_network.py
+```
+
+##### properties
+
+存放有关配置的 yaml 文件。包含 ```PC_AVS.yaml```。
+
+
+
+
+
 
 
 
