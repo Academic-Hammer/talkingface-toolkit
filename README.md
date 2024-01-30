@@ -1,210 +1,165 @@
-# talkingface-toolkit
-## 框架整体介绍
-### checkpoints
-主要保存的是训练和评估模型所需要的额外的预训练模型，在对应文件夹的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/checkpoints/README.md)有更详细的介绍
+# talkingface-toolkit小组作业
+小组成员名单：
+陈清扬  高艺芙  贺芳琪  
 
-### datset
-存放数据集以及数据集预处理之后的数据，详细内容见dataset里的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/dataset/README.md)
+## 模型选择
+我们选择复现的模型是[StarGAN-VC](https://github.com/kamepong/StarGAN-VC)模型，是专为语音转换任务设计的模型。它是StarGAN框架的延伸，该框架最初用于图像到图像的转换任务。StarGAN-VC专注于将一个说话者的语音特征转换为另一个说话者。
 
-### saved
-存放训练过程中保存的模型checkpoint, 训练过程中保存模型时自动创建
 
-### talkingface
-主要功能模块，包括所有核心代码
 
-#### config
-根据模型和数据集名称自动生成所有模型、数据集、训练、评估等相关的配置信息
-```
-config/
+## 作业环境
+实验使用华为云的modelarts控制台下的notebook进行。
 
-├── configurator.py
+推理部分由于华为云局限太多，考虑到推理部分的硬件资源不再是硬性要求，选择本机推理。
 
-```
-#### data
-- dataprocess：模型特有的数据处理代码，（可以是对方仓库自己实现的音频特征提取、推理时的数据处理）。如果实现的模型有这个需求，就要建立一对应的文件
-- dataset：每个模型都要重载`torch.utils.data.Dataset` 用于加载数据。每个模型都要有一个`model_name+'_dataset.py'`文件. `__getitem__()`方法的返回值应处理成字典类型的数据。 <span style="color:red">(核心部分)</span>
-```
-data/
+华为云modelarts配置采用pytorch1.8-cuda10.2-cudnn7-ubuntu18.04镜像和GPU: 1*T4(16GB)|CPU: 8核 32GB规格，20GB云硬盘。
 
-├── dataprocess
+配置截图如下：
+![modelarts配置](./md_img/guige_1.png)
 
-| ├── wav2lip_process.py
+使用华为云modelarts提供了硬件资源和一定的镜像资源，但事实上也有不太方便的地方，后面的实验过程中会提到。
 
-| ├── xxxx_process.py
+所需库（这部分在所需依赖目录下也有）
+可以使用两个空格加回车来实现换行显示，如下所示：
 
-├── dataset
+SoundFile  
+torchaudio  
+munch  
+torch  
+pydub  
+pyyaml  
+librosa  
+nltk  
+matplotlib  
+accelerate  
+transformers  
+einops  
+einops-exts  
+tqdm  
+typing  
+typing-extensions  
+git+https://github.com/resemble-ai/monotonic_align.git  
+(推理demo需要额外安装phonemizer和espeak)
 
-| ├── wav2lip_dataset.py
 
-| ├── xxx_dataset.py
-```
 
-#### evaluate
-主要涉及模型评估的代码
-LSE metric 需要的数据是生成的视频列表
-SSIM metric 需要的数据是生成的视频和真实的视频列表
+## 数据集
+GitHub代码仓库中本身提供了三个txt文件，指定数据集是LJSPeech，我们使用官网下载的LJSPeech-1.1。模型自带的文本对齐器和音高提取器在 24 kHz 数据上进行了预训练，数据上采样至 24 kHz较为合适(可在配置文件中查看)。
+![txt文件](./md_img/data_1.png)
+![LJSpeech(需自行下载)](./md_img/data_2.png)
 
-#### model
-实现的模型的网络和对应的方法 <span style="color:red">（核心部分）</span>
 
-主要分三类：
-- audio-driven (音频驱动)
-- image-driven （图像驱动）
-- nerf-based （基于神经辐射场的方法）
 
-```
-model/
+## 运行说明
+### 解压一个文件
+请先把Utils/ASR/epoch_00080.zip解压到当前目录再继续，GitHub客户端似乎无法上传.pth文件，但这个是运行所需的，所以就打包了一下。
 
-├── audio_driven_talkingface
+### 运行准备
 
-| ├── wav2lip.py
+从头开始进行train_first较为耗时，且容易出现nan问题和其他报错，我们复现train_second来进行更加稳定的训练
 
-├── image_driven_talkingface
+运行download.ipynb单元格内容，下载所需预训练模型到checkpoints作为first_stage产物，为稳定训练做准备。
 
-| ├── xxxx.py
+另外这个模型太大了，700多MB的pth文件，真心不好上传到GitHub上，所以就跟数据集一样删掉了，按上面的download.ipynb所示，提供了预训练模型，如果不想再验证训练过程，也可以在下载好之后，直接用demo文件夹里面那个ipynb跑推理，但是需要将checkpoints中的预训练模型转移到Models/LJSpeech/中。（这个目录是训练时生成的，用于保存配置/日志/模型，推理demo默认使用这个目录中的配置和模型）
 
-├── nerf_based_talkingface
+推理时Models/LJSpeech/目录下应该有配置文件和保存模型：
+![推理demo测试](./md_img/model_1.png)
 
-| ├── xxxx.py
+### 配置文件修改
+在配置文件中修改可能需要调整的数据集路径和first_stage_path路径(first_stage_path默认在checkpoints中)
+![配置文件](./md_img/peizhi_1.png)
+### 运行指令
 
-├── abstract_talkingface.py
-
-```
-
-#### properties
-保存默认配置文件，包括：
-- 数据集配置文件
-- 模型配置文件
-- 通用配置文件
-
-需要根据对应模型和数据集增加对应的配置文件，通用配置文件`overall.yaml`一般不做修改
-```
-properties/
-
-├── dataset
-
-| ├── xxx.yaml
-
-├── model
-
-| ├── xxx.yaml
-
-├── overall.yaml
-
-```
-
-#### quick_start
-通用的启动文件，根据传入参数自动配置数据集和模型，然后训练和评估（一般不需要修改）
-```
-quick_start/
-
-├── quick_start.py
-
-```
-
-#### trainer
-训练、评估函数的主类。在trainer中，如果可以使用基类`Trainer`实现所有功能，则不需要写一个新的。如果模型训练有一些特有部分，则需要重载`Trainer`。需要重载部分可能主要集中于: `_train_epoch()`, `_valid_epoch()`。 重载的`Trainer`应该命名为：`{model_name}Trainer`
-```
-trainer/
-
-├── trainer.py
-
-```
-
-#### utils
-公用的工具类，包括`s3fd`人脸检测，视频抽帧、视频抽音频方法。还包括根据参数配置找对应的模型类、数据类等方法。
-一般不需要修改，但可以适当添加一些必须的且相对普遍的数据处理文件。
-
-## 使用方法
-### 环境要求
-- `python=3.8`
-- `torch==1.13.1+cu116`（gpu版，若设备不支持cuda可以使用cpu版）
-- `numpy==1.20.3`
-- `librosa==0.10.1`
-
-尽量保证上面几个包的版本一致
-
-提供了两种配置其他环境的方法：
-```
-pip install -r requirements.txt
-
-or
-
-conda env create -f environment.yml
-```
-
-建议使用conda虚拟环境！！！
-
-### 训练和评估
+因为该模型的指定使用LJSPeech，所以默认配置中的数据集就是LJSPeech路径，代码需要用到huggingface相关资源，考虑访问问题，需要使用镜像网站hf-mirror.com，可以使用以下代码来运行即可开始训练。训练代码中包括train和val。
 
 ```bash
-python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx)
+HF_ENDPOINT=https://hf-mirror.com python run_talkingface.py --model=StyleTTS2 --
+
 ```
 
-### 权重文件
-
-- LSE评估需要的权重: syncnet_v2.model [百度网盘下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
-- wav2lip需要的lip expert 权重：lipsync_expert.pth [百度网下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
-
-## 可选论文：
-### Aduio_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| MakeItTalk | [paper](https://arxiv.org/abs/2004.12992) | [code](https://github.com/yzhou359/MakeItTalk) |
-| MEAD | [paper](https://wywu.github.io/projects/MEAD/support/MEAD.pdf) | [code](https://github.com/uniBruce/Mead) |
-| RhythmicHead | [paper](https://arxiv.org/pdf/2007.08547v1.pdf) | [code](https://github.com/lelechen63/Talking-head-Generation-with-Rhythmic-Head-Motion) |
-| PC-AVS | [paper](https://arxiv.org/abs/2104.11116) | [code](https://github.com/Hangz-nju-cuhk/Talking-Face_PC-AVS) |
-| EVP | [paper](https://openaccess.thecvf.com/content/CVPR2021/papers/Ji_Audio-Driven_Emotional_Video_Portraits_CVPR_2021_paper.pdf) | [code](https://github.com/jixinya/EVP) |
-| LSP | [paper](https://arxiv.org/abs/2109.10595) | [code](https://github.com/YuanxunLu/LiveSpeechPortraits) |
-| EAMM | [paper](https://arxiv.org/pdf/2205.15278.pdf) | [code](https://github.com/jixinya/EAMM/) |
-| DiffTalk | [paper](https://arxiv.org/abs/2301.03786) | [code](https://github.com/sstzal/DiffTalk) |
-| TalkLip | [paper](https://arxiv.org/pdf/2303.17480.pdf) | [code](https://github.com/Sxjdwang/TalkLip) |
-| EmoGen | [paper](https://arxiv.org/pdf/2303.11548.pdf) | [code](https://github.com/sahilg06/EmoGen) |
-| SadTalker | [paper](https://arxiv.org/abs/2211.12194) | [code](https://github.com/OpenTalker/SadTalker) |
-| HyperLips | [paper](https://arxiv.org/abs/2310.05720) | [code](https://github.com/semchan/HyperLips) |
-| PHADTF | [paper](http://arxiv.org/abs/2002.10137) | [code](https://github.com/yiranran/Audio-driven-TalkingFace-HeadPose) |
-| VideoReTalking | [paper](https://arxiv.org/abs/2211.14758) | [code](https://github.com/OpenTalker/video-retalking#videoretalking--audio-based-lip-synchronization-for-talking-head-video-editing-in-the-wild-)
-|                                 |
+由于GitHub代码仓库本身并没有特别编写evaluate相关的代码，只有一个notebook的demo，也没有数据集，不方便重构，且所需下载文件在华为云上似乎无法下载，这部分用本机做的，在demo文件夹里面，结果存放在result_wav中。
 
 
 
-### Image_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| PIRenderer | [paper](https://arxiv.org/pdf/2109.08379.pdf) | [code](https://github.com/RenYurui/PIRender) |
-| StyleHEAT | [paper](https://arxiv.org/pdf/2203.04036.pdf) | [code](https://github.com/OpenTalker/StyleHEAT) |
-| MetaPortrait | [paper](https://arxiv.org/abs/2212.08062) | [code](https://github.com/Meta-Portrait/MetaPortrait) |
-|                                 |
-### Nerf-based talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| AD-NeRF | [paper](https://arxiv.org/abs/2103.11078) | [code](https://github.com/YudongGuo/AD-NeRF) |
-| GeneFace | [paper](https://arxiv.org/abs/2301.13430) | [code](https://github.com/yerfor/GeneFace) |
-| DFRF | [paper](https://arxiv.org/abs/2207.11770) | [code](https://github.com/sstzal/DFRF) |
-|                                 |
-### text_to_speech
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| VITS | [paper](https://arxiv.org/abs/2106.06103) | [code](https://github.com/jaywalnut310/vits) |
-| Glow TTS | [paper](https://arxiv.org/abs/2005.11129) | [code](https://github.com/jaywalnut310/glow-tts) |
-| FastSpeech2 | [paper](https://arxiv.org/abs/2006.04558v1) | [code](https://github.com/ming024/FastSpeech2) |
-| StyleTTS2 | [paper](https://arxiv.org/abs/2306.07691) | [code](https://github.com/yl4579/StyleTTS2) |
-| Grad-TTS | [paper](https://arxiv.org/abs/2105.06337) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/Grad-TTS) | 
-| FastSpeech | [paper](https://arxiv.org/abs/1905.09263) | [code](https://github.com/xcmyz/FastSpeech) |
-|                                 |
-### voice_conversion
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| StarGAN-VC | [paper](http://www.kecl.ntt.co.jp/people/kameoka.hirokazu/Demos/stargan-vc2/index.html) | [code](https://github.com/kamepong/StarGAN-VC) |
-| Emo-StarGAN | [paper](https://www.researchgate.net/publication/373161292_Emo-StarGAN_A_Semi-Supervised_Any-to-Many_Non-Parallel_Emotion-Preserving_Voice_Conversion) | [code](https://github.com/suhitaghosh10/emo-stargan) |
-| adaptive-VC | [paper](https://arxiv.org/abs/1904.05742) | [code](https://github.com/jjery2243542/adaptive_voice_conversion) |
-| DiffVC | [paper](https://arxiv.org/abs/2109.13821) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/DiffVC) |
-| Assem-VC | [paper](https://arxiv.org/abs/2104.00931) | [code](https://github.com/maum-ai/assem-vc) |
-|               |
 
-## 作业要求
-- 确保可以仅在命令行输入模型和数据集名称就可以训练、验证。（部分仓库没有提供训练代码的，可以不训练）
-- 每个组都要提交一个README文件，写明完成的功能、最终实现的训练、验证截图、所使用的依赖、成员分工等。
+## 实现功能
 
 
 
+
+
+
+
+## 结果截图
+
+
+![](./md_img/1.jpg)
+
+![](./md_img/2.jpg)
+
+![](./md_img/3.jpg)
+
+![](./md_img/4.jpg)
+
+
+
+## 所用依赖
+
+SoundFile  
+torchaudio  
+munch  
+torch  
+pydub  
+pyyaml  
+librosa  
+nltk  
+matplotlib  
+accelerate  
+transformers  
+einops  
+einops-exts  
+tqdm  
+typing  
+typing-extensions  
+git+https://github.com/resemble-ai/monotonic_align.git  
+(推理demo需要额外安装phonemizer和espeak)
+
+
+
+
+## 成员分工
+申铄：整体流程与规划解读，数据集类代码重构，模型代码重构，训练代码重构，推理文件重构，配置文件调整，测试代码与bug修复，撰写实验报告。
+
+金奕舟：部分配置调整，数据集整理，参与讨论相关，部分撰写实验报告。
+
+王之禾：部分数据集加载重构，参与讨论相关，撰写使用报告。  
+
+陈锦超：部分loss计算，部分优化器相关，参与讨论相关，撰写使用报告。  
+
+胡雨轩：部分模型方法重构，参与讨论相关，撰写实验报告。  
+
+
+
+
+## 华为云modelarts局限/花絮
+
+### 上传大一点的文件需要OBS桶中转
+一般模型可能没什么不方便的，但是这个StyleTTS2从代码仓库下下来就是100MB以上。
+
+### Modelarts用户没有root权限
+直接使用华为云无法完成全部，没有root权限，无法进行sudo apt来安装一些必要组件（如espeak）等。
+Python版本也是3.7的，没有root权限执行不了安装操作，装不了3.8，运行quick_start时有报错，最后把quick_start的自动寻找类改为手动配置各个类来运行。
+
+### batch_size不调小的话...modelarts的GPU不够
+这个模型训练起来对硬件的要求比较高，batch_size使用默认的16，华为云的GPU也会爆
+![gpu](./md_img/GPU_1.png)
+最后就调整为2了。
+
+### 关于espeak和phonemizer的安装
+这是推理部分的事了，装完espeak配置好环境变量，但是phonemizer还是一直有未安装espeak报错。
+![报错](./md_img/espeak_1.png)
+最后在GitHub评论区找到了解决方法，光自己调谁能想到要这么来修复QAQ：
+![解决](./md_img/git.png)
+
+## 后来的调整
+后来把losses和optimizers转移到talkingface.utils中了，如果有遇到这两个引用失败可以看看是不是import那里忘改了。（应该都改了）
