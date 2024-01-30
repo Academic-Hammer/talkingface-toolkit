@@ -252,7 +252,8 @@ class Config(object):
         if isinstance(metrics, str):
             self.final_config_dict["metrics"] = [metrics]
 
-        self.final_config_dict["checkpoint_dir"] = self.final_config_dict["checkpoint_dir"] + self.final_config_dict["checkpoint_sub_dir"]
+        # print(self.final_config_dict)
+        self.final_config_dict["checkpoint_dir"] = self.final_config_dict["checkpoint_dir"] + "/wav2lip"
         
         self.final_config_dict["temp_dir"] = self.final_config_dict['temp_dir'] +  self.final_config_dict['temp_sub_dir']
 

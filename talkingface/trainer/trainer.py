@@ -28,7 +28,6 @@ from talkingface.utils import(
 from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
 from talkingface.evaluator import Evaluator
 
-
 class AbstractTrainer(object):
     r"""Trainer Class is used to manage the training and evaluation processes of recommender system models.
     AbstractTrainer is an abstract class in which the fit() and evaluate() method should be implemented according
@@ -203,7 +202,7 @@ class Trainer(AbstractTrainer):
         Returns:
             loss
         """
-        print('Valid for {} steps'.format(self.eval_steps))
+        print('Valid for {} steps'.format(self.eval_step))
         self.model.eval()
         total_loss_dict = {}
         iter_data = (
@@ -217,7 +216,8 @@ class Trainer(AbstractTrainer):
         step = 0
         for batch_idx, batched_data in enumerate(iter_data):
             step += 1
-            batched_data.to(self.device)    
+            # batched_data.to(self.device)
+            # batched_data={"input":mfcc,"label":label}
             losses_dict = self.model.calculate_loss(batched_data, valid=True)
             for key, value in losses_dict.items():
                 if key in total_loss_dict:
@@ -367,10 +367,10 @@ class Trainer(AbstractTrainer):
         """
         if saved and self.start_epoch >= self.epochs:
             self._save_checkpoint(-1, verbose=verbose)
-
+        print(self.config['resume_checkpoint_path'],self.config['resume'],"wokao")
         if not (self.config['resume_checkpoint_path'] == None ) and self.config['resume']:
             self.resume_checkpoint(self.config['resume_checkpoint_path'])
-        
+
         for epoch_idx in range(self.start_epoch, self.epochs):
             training_start_time = time()
             train_loss = self._train_epoch(train_data, epoch_idx, show_progress=show_progress)
@@ -485,6 +485,7 @@ class Wav2LipTrainer(Trainer):
         for batch_idx, interaction in enumerate(iter_data):
             self.optimizer.zero_grad()
             step += 1
+            print(interaction)
             losses_dict = loss_func(interaction)
             loss = losses_dict["loss"]
 
@@ -554,4 +555,135 @@ class Wav2LipTrainer(Trainer):
         if losses_dict["sync_loss"] < .75:
             self.model.config["syncnet_wt"] = 0.01
         return average_loss_dict
-    
+
+class evpTrainer(Trainer):
+    def __init__(self, config, model):
+        self.config = config
+        self.model = model
+        self.logger = getLogger()
+        self.tensorboard = get_tensorboard(self.logger)
+        self.wandblogger = WandbLogger(config)
+        # self.enable_amp = config["enable_amp"]
+        # self.enable_scaler = torch.cuda.is_available() and config["enable_scaler"]
+
+        # config for train
+        self.learner = config["learner"]
+        self.learning_rate = config["learning_rate"]
+        self.epochs = config["epochs"]
+        self.eval_step = min(config["eval_step"], self.epochs)
+        self.stopping_step = config["stopping_step"]
+        self.test_batch_size = config["eval_batch_size"]
+        self.gpu_available = torch.cuda.is_available() and config["use_gpu"]
+        self.device = config["device"]
+        self.checkpoint_dir = config["checkpoint_dir"]
+        ensure_dir(self.checkpoint_dir)
+        saved_model_file = "{}-{}.pth".format(self.config["model"], get_local_time())
+        self.saved_model_file = os.path.join(self.checkpoint_dir, saved_model_file)
+        self.weight_decay = config["weight_decay"]
+        self.start_epoch = 0
+        self.cur_step = 0
+        self.train_loss_dict = dict()
+        self.optimizer = self._build_optimizer()
+        self.evaluator = Evaluator(config)
+
+        self.valid_metric_bigger = config["valid_metric_bigger"]
+        self.best_valid_score = -np.inf if self.valid_metric_bigger else np.inf
+        self.best_valid_result = None
+    def fit(self, train_data, valid_data=None, verbose=True, saved=True, show_progress=False, callback_fn=None):
+        r"""Train the model based on the train data and the valid data.
+
+        Args:
+            train_data (DataLoader): the train data
+            valid_data (DataLoader, optional): the valid data, default: None.
+                                            If it's None, the early_stopping is invalid.
+            verbose (bool, optional): whether to write training and evaluation information to logger, default: True
+            saved (bool, optional): whether to save the model parameters, default: True
+            show_progress (bool): Show the progress of training epoch and evaluate epoch. Defaults to ``False``.
+            callback_fn (callable): Optional callback function executed at end of epoch.
+                                    Includes (epoch_idx, valid_score) input arguments.
+
+        Returns:
+            best result
+        """
+        # print(self.config['resume_checkpoint_path'],self.config['resume'],"wokao")
+        # self.start_epoch=0
+        if saved and self.start_epoch >= self.epochs:
+            self._save_checkpoint(-1, verbose=verbose)
+
+        if not (self.config['resume_checkpoint_path'] == None) and self.config['resume']:
+            self.resume_checkpoint(self.config['resume_checkpoint_path'])
+
+        for epoch_idx in range(self.start_epoch, self.epochs):
+            training_start_time = time()
+            train_loss = self._train_epoch(train_data, epoch_idx, show_progress=show_progress)
+            self.train_loss_dict[epoch_idx] = (
+                sum(train_loss) if isinstance(train_loss, tuple) else train_loss
+            )
+            training_end_time = time()
+            train_loss_output = self._generate_train_loss_output(
+                epoch_idx, training_start_time, training_end_time, train_loss)
+
+            if verbose:
+                self.logger.info(train_loss_output)
+            # self._add_train_loss_to_tensorboard(epoch_idx, train_loss)
+
+            if self.eval_step <= 0 or not valid_data:
+                if saved:
+                    self._save_checkpoint(epoch_idx, verbose=verbose)
+                continue
+
+            if (epoch_idx + 1) % self.eval_step == 0:
+                valid_start_time = time()
+                valid_loss = self._valid_epoch(valid_data=valid_data, show_progress=show_progress)
+
+                (self.best_valid_score, self.cur_step, stop_flag, update_flag,) = early_stopping(
+                    valid_loss['loss'],
+                    self.best_valid_score,
+                    self.cur_step,
+                    max_step=self.stopping_step,
+                    bigger=self.valid_metric_bigger,
+                )
+                valid_end_time = time()
+
+                valid_loss_output = (
+                        set_color("valid result", "blue") + ": \n" + dict2str(valid_loss)
+                )
+                if verbose:
+                    self.logger.info(valid_loss_output)
+
+                if update_flag:
+                    if saved:
+                        self._save_checkpoint(epoch_idx, verbose=verbose)
+                    self.best_valid_result = valid_loss['loss']
+
+                if stop_flag:
+                    stop_output = "Finished training, best eval result in epoch %d" % (
+                            epoch_idx - self.cur_step * self.eval_step
+                    )
+                    if verbose:
+                        self.logger.info(stop_output)
+                    break
+
+    @torch.no_grad()
+    def evaluate(self, load_best_model=True, model_file=None):
+        """
+        Evaluate the model based on the test data.
+
+        args: load_best_model: bool, whether to load the best model in the training process.
+                model_file: str, the model file you want to evaluate.
+
+        """
+        if load_best_model:
+            checkpoint_file = model_file or self.saved_model_file
+            checkpoint = torch.load(checkpoint_file, map_location=self.device)
+            self.model.load_state_dict(checkpoint["state_dict"])
+            self.model.load_other_parameter(checkpoint.get("other_parameter"))
+            message_output = "Loading model structure and parameters from {}".format(
+                checkpoint_file
+            )
+            self.logger.info(message_output)
+        self.model.eval()
+
+        datadict = self.model.generate_batch()
+        eval_result = self.evaluator.evaluate(datadict)
+        self.logger.info(eval_result)
