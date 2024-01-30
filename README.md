@@ -99,7 +99,7 @@ https://github.com/dndnda/talkingface-toolkit/raw/main/dataset/video-retalking/v
 
 **推理结果**
 
-https://github.com/dndnda/talkingface-toolkit/raw/main/results/1_1.mp4
+https://github.com/dndnda/talkingface-toolkit/blob/main/results/1_1.mp4
 
 ### 命令运行截图（包括评估结果）
 
