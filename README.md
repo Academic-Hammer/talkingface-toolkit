@@ -1,3 +1,25 @@
+[TOC]
+
+# StyleHeat TalkingFace模型实现说明文档
+
+## 简介
+
+本文档是（王菁芃,周楚舒,明楷,杨梓,潘静雯）小组成果中StyleHeat模型部分的说明文档。metaportrait模型部分在[metaportrait]()仓库中。
+
+StyleHeat是一种基于预训练 StyleGAN 模型的新型统一模型，它利用 StyleGAN 模型中出色的空间变换属性等潜在特征空间，实现一系列强大的功能，即高分辨率视频生成、通过驱动视频或音频进行自由控制以及灵活的面部视频生成。
+
+本项目是StyleHeat模型的在talkingface框架中的整合实现，部分代码取自仓库[StyleHEAT](https://github.com/OpenTalker/StyleHEAT)。
+
+## 团队成员分工
+
+本小组完成了metaportrait和styleheat模型修改工作，具体分工如下：
+
+- **周楚舒**：统筹分工与时间安排，阅读metaportrait论文，配置实验环境，参与小组讨论，跑通了metaportrait代码，并将metaportrait代码的base模块接入toolkit，编写metaportrait模型的说明文档
+- **杨   梓**：阅读metaportrait论文，配置实验环境，参与小组讨论，跑通了metaportrait源代码，完成数据集整理和重构，对temporal super-resolution model模块代码重构，部分接口撰写和调试
+- **潘静雯**：阅读metaportrait论文和源代码，配置实验环境，参加小组讨论和sr_model的调试工作，完成Temporal Super-resolution Model模型的数据集下载和预处理，撰写实验报告
+- **王菁芃**：阅读styleheat论文，配置实验环境，参与小组讨论，进行数据集下载和预处理，负责模型推理与训练部分接口的调试与修改，编写styleheat模型说明文档
+- **明   楷**：阅读styleheat论文，配置实验环境，参与小组讨论，代码修改调试，撰写实验报告，进行loss计算
+
 ## 快速使用
 
 使用python运行run_talkingface.py脚本即可。在参数中需给出模型名称：StyleHeat，数据集styleheat_vox。例如：
@@ -12,26 +34,20 @@ python run_talkingface.py --model=StyleHeat --dataset=styleheat_vox
 
 - 进行模型推演请下载[预训练模型](https://drive.google.com/drive/folders/1-m47oPsa3kxjgK5eSJ8g8sHzG4zr2oRc)，并放入checkpoints子目录下。
 
-  **预训练文件说明**
+  <details>
+      <figure class='table-figure'><table>
+  <thead>
+  <tr><th>checkpoints/Encoder_e4e.pth</th><th>Pre-trained E4E StyleGAN Inversion Encoder.</th></tr></thead>
+  <tbody><tr><td>checkpoints/hfgi.pth</td><td>Pre-trained HFGI StyleGAN Inversion Encoder.</td></tr><tr><td>checkpoints/StyleGAN_e4e.pth</td><td>Pre-trained StyleGAN.</td></tr><tr><td>checkpoints/ffhq_pca.pt</td><td>StyleGAN editing directions.</td></tr><tr><td>checkpoints/ffhq_PCA.npz</td><td>StyleGAN optimization parameters.</td></tr><tr><td>checkpoints/interfacegan_directions/</td><td>StyleGAN editing directions.</td></tr><tr><td>checkpoints/stylegan2_d_256.pth</td><td>Pre-trained StyleGAN discriminator.</td></tr><tr><td>checkpoints/model_ir_se50.pth</td><td>Pre-trained id-loss discriminator.</td></tr><tr><td>checkpoints/StyleHEAT_visual.pt</td><td>Pre-trained StyleHEAT model.</td></tr><tr><td>checkpoints/BFM</td><td>3DMM library. (Note the zip file should be unzipped to BFM/.)</td></tr><tr><td>checkpoints/Deep3D/epoch_20.pth</td><td>Pre-trained 3DMM extractor.</td></tr></tbody>
+  </table></figure></details>
 
-  | checkpoints/Encoder_e4e.pth          | Pre-trained E4E StyleGAN Inversion Encoder.                  |
-  | ------------------------------------ | ------------------------------------------------------------ |
-  | checkpoints/hfgi.pth                 | Pre-trained HFGI StyleGAN Inversion Encoder.                 |
-  | checkpoints/StyleGAN_e4e.pth         | Pre-trained StyleGAN.                                        |
-  | checkpoints/ffhq_pca.pt              | StyleGAN editing directions.                                 |
-  | checkpoints/ffhq_PCA.npz             | StyleGAN optimization parameters.                            |
-  | checkpoints/interfacegan_directions/ | StyleGAN editing directions.                                 |
-  | checkpoints/stylegan2_d_256.pth      | Pre-trained StyleGAN discriminator.                          |
-  | checkpoints/model_ir_se50.pth        | Pre-trained id-loss discriminator.                           |
-  | checkpoints/StyleHEAT_visual.pt      | Pre-trained StyleHEAT model.                                 |
-  | checkpoints/BFM                      | 3DMM library. (Note the zip file should be unzipped to BFM/.) |
-  | checkpoints/Deep3D/epoch_20.pth      | Pre-trained 3DMM extractor.                                  |
+  **预训练文件说明**
 
 - 如使用音频推演，请下载sadtalker[预训练模型](https://pan.baidu.com/s/1kb1BCPaLOWX1JJb9Czbn6w?pwd=sadt)和[离线包](https://pan.baidu.com/s/1P4fRgk9gaSutZnn8YW034Q?pwd=sadt),并根据sadtalker[说明](https://github.com/OpenTalker/SadTalker)放入对应的文件夹
 
 ### 模型推理
 
-#### **视频重演**
+#### 视频重演
 
 - **功能说明**
 
