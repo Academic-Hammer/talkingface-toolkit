@@ -554,4 +554,171 @@ class Wav2LipTrainer(Trainer):
         if losses_dict["sync_loss"] < .75:
             self.model.config["syncnet_wt"] = 0.01
         return average_loss_dict
+
+import numpy as np
+from tqdm import tqdm
+import torch
+from torch.utils.data import DataLoader
+from talkingface.data.dataset.gradtts_dataset import TextMelBatchCollate
+from talkingface.utils import create_dataset
+
+class GradTTSTrainer(Trainer):
+    def __init__(self, config, model):
+        super(GradTTSTrainer, self).__init__(config, model)
+        self.config = config
+        super(Trainer, self).__init__(config, model)
+        self.logger = getLogger()
+        self.tensorboard = get_tensorboard(self.logger)
+        self.wandblogger = WandbLogger(config)
+        # self.enable_amp = config["enable_amp"]
+        # self.enable_scaler = torch.cuda.is_available() and config["enable_scaler"]
+
+        # config for train
+        self.learner = config["learner"]
+        self.learning_rate = config["learning_rate"]
+        self.epochs = config["epochs"]
+        self.eval_step = min(config["eval_step"], self.epochs)
+        self.stopping_step = config["stopping_step"]
+        self.test_batch_size = config["eval_batch_size"]
+        self.gpu_available = torch.cuda.is_available() and config["use_gpu"]
+        self.device = config["device"]
+        self.checkpoint_dir = config["checkpoint_dir"]
+        ensure_dir(self.checkpoint_dir)
+        saved_model_file = "{}-{}.pth".format(self.config["model"], get_local_time())
+        self.saved_model_file = os.path.join(self.checkpoint_dir, saved_model_file)
+        self.weight_decay = config["weight_decay"]
+        self.start_epoch = 0
+        self.cur_step = 0
+        self.train_loss_dict = dict()
+        self.optimizer = self._build_optimizer()
+        self.evaluator = Evaluator(config)
+
+        self.valid_metric_bigger = config["valid_metric_bigger"]
+        self.best_valid_score = -np.inf if self.valid_metric_bigger else np.inf
+        self.best_valid_result = None
+    def fit(self, train_dataset1, valid_data1=None, verbose=True, saved=True, show_progress=False, callback_fn=None):
+        """
+        根据训练数据和验证数据训练模型。
+
+        参数:
+            train_data (DataLoader): 训练数据
+            valid_data (DataLoader, optional): 验证数据，默认为None。如果为None，则早停无效。
+            verbose (bool, optional): 是否将训练和评估信息写入日志，默认为True
+            saved (bool, optional): 是否保存模型参数，默认为True
+            show_progress (bool): 是否显示训练和评估的进度。默认为False。
+            callback_fn (callable): 可选的回调函数，在每个epoch结束时执行，包括输入参数为(epoch_idx, valid_score)。
+
+        返回:
+            最佳结果
+        """
+
+        train_dataset, val_dataset = create_dataset(self.config)
+        batch_collate = TextMelBatchCollate()  # 初始化批次整理函数
+        train_data = DataLoader(dataset=train_dataset, batch_size=self.config['batch_size'],
+                            collate_fn=batch_collate, drop_last=True,
+                            num_workers=4, shuffle=False)
+        valid_data = DataLoader(dataset=val_dataset, batch_size=self.config['batch_size'],
+                            collate_fn=batch_collate, drop_last=True,
+                            num_workers=4, shuffle=False)
+        if saved and self.start_epoch >= self.epochs:
+            self._save_checkpoint(-1, verbose=verbose)
+
+        if not (self.config['resume_checkpoint_path'] == None ) and self.config['resume']:
+            self.resume_checkpoint(self.config['resume_checkpoint_path'])
+
+        for epoch_idx in range(self.start_epoch, self.epochs):
+            training_start_time = time()
+            train_loss = self._train_epoch(train_data, epoch_idx, show_progress=show_progress)
+            self.train_loss_dict[epoch_idx] = (
+                sum(train_loss) if isinstance(train_loss, tuple) else train_loss
+            )
+            training_end_time = time()
+            train_loss_output = self._generate_train_loss_output(
+                epoch_idx, training_start_time, training_end_time, train_loss)
+
+            if verbose:
+                self.logger.info(train_loss_output)
+            # self._add_train_loss_to_tensorboard(epoch_idx, train_loss)
+            if self.eval_step <= 0 or not valid_data:
+                if saved:
+                    self._save_checkpoint(epoch_idx, verbose=verbose)
+                continue
+
+            if (epoch_idx + 1) % self.eval_step == 0:
+                valid_start_time = time()
+                valid_loss = self._valid_epoch(valid_data=valid_data, show_progress=show_progress)
+
+                (self.best_valid_score, self.cur_step, stop_flag,update_flag,) = early_stopping(
+                    valid_loss['loss'],
+                    self.best_valid_score,
+                    self.cur_step,
+                    max_step=self.stopping_step,
+                    bigger=self.valid_metric_bigger,
+                )
+                valid_end_time = time()
+
+                valid_loss_output = (
+                    set_color("valid result", "blue") + ": \n" + dict2str(valid_loss)
+                )
+                if verbose:
+                    self.logger.info(valid_loss_output)
+
+                if update_flag:
+                    if saved:
+                        self._save_checkpoint(epoch_idx, verbose=verbose)
+                    self.best_valid_result = valid_loss['loss']
+
+                if stop_flag:
+                    stop_output = "Finished training, best eval result in epoch %d" % (
+                        epoch_idx - self.cur_step * self.eval_step
+                    )
+                    if verbose:
+                        self.logger.info(stop_output)
+                    break
+    def _valid_epoch(self, valid_data, show_progress=False):
+        r"""Valid the model with valid data. Different from the evaluate, this is use for training.
+
+        Args:
+            valid_data (DataLoader): the valid data.
+            show_progress (bool): Show the progress of evaluate epoch. Defaults to ``False``.
+
+        Returns:
+            loss
+        """
+        print('Valid for {} steps'.format(self.eval_step))
+        self.model.eval()
+        total_loss_dict = {}
+        iter_data = (
+            tqdm(valid_data,
+                total=len(valid_data),
+                ncols=None,
+            )
+            if show_progress
+            else valid_data
+        )
+        step = 0
+        for batch_idx, batched_data in enumerate(iter_data):
+            step += 1
+            losses_dict = self.model.calculate_loss(batched_data, valid=True)
+            for key, value in losses_dict.items():
+                if key in total_loss_dict:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] += value
+                    # 如果键已经在总和字典中，累加当前值
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] += value.item()
+                else:
+                    if not torch.is_tensor(value):
+                        total_loss_dict[key] = value
+                    # 否则，将当前值添加到字典中
+                    else:
+                        losses_dict[key] = value.item()
+                        total_loss_dict[key] = value.item()
+            iter_data.set_description(set_color(f"Valid {losses_dict}", "pink"))
+        average_loss_dict = {}
+        for key, value in total_loss_dict.items():
+            average_loss_dict[key] = value/step
+
+        return average_loss_dict
     
