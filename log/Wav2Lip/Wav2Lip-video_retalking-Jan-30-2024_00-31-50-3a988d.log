@@ -1,0 +1,81 @@
+Tue 30 Jan 2024 00:31:50 INFO  ['run_talkingface.py', '--model=Wav2Lip', '--dataset=video_retalking']
+Tue 30 Jan 2024 00:31:50 INFO  
+General Hyper Parameters:
+gpu_id = 3, 4, 5
+use_gpu = True
+seed = 2023
+checkpoint_dir = saved/wav2lip
+show_progress = True
+log_wandb = False
+reproducibility = True
+
+Training Hyper Parameters:
+epochs = 300
+train_batch_size = 2048
+learner = adam
+learning_rate = 0.0001
+eval_step = 1
+stopping_step = 10
+weight_decay = 0.0
+
+Evaluation Hyper Parameters:
+metrics = ['LSE', 'SSIM']
+evaluate_batch_size = 50
+lse_checkpoint_path = checkpoints/LSE/syncnet_v2.model
+temp_dir = results/temp/wav2lip
+valid_metric_bigger = False
+
+Other Hyper Parameters: 
+worker = 0
+shuffle = True
+device = cuda
+saved = True
+resume = True
+train = True
+lse_reference_dir = lse
+syncnet_wt = 0.03
+syncnet_batch_size = 64
+syncnet_lr = 0.0001
+syncnet_eval_interval = 10000
+syncnet_checkpoint_interval = 10000
+syncnet_T = 5
+syncnet_mel_step_size = 16
+syncnet_checkpoint_path = checkpoints/wav2lip/lipsync_expert.pth
+num_mels = 80
+rescale = True
+rescaling_max = 0.9
+use_lws = False
+n_fft = 800
+hop_size = 200
+win_size = 800
+sample_rate = 16000
+frame_shift_ms = None
+signal_normalization = True
+allow_clipping_in_normalization = True
+symmetric_mels = True
+max_abs_value = 4
+preemphasize = True
+preemphasis = 0.97
+min_level_db = -100
+ref_level_db = 20
+fmin = 55
+fmax = 7600
+img_size = 96
+fps = 25
+mel_step_size = 16
+batch_size = 16
+ngpu = 1
+checkpoint_sub_dir = /wav2lip
+temp_sub_dir = /wav2lip
+pads = [0, 10, 0, 0]
+static = False
+face_det_batch_size = 16
+resize_factor = 1
+crop = [0, -1, 0, -1]
+box = [-1, -1, -1, -1]
+rotate = False
+nosmooth = False
+wav2lip_batch_size = 128
+vshift = 15
+
+
