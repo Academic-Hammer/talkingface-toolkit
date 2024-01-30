@@ -208,9 +208,22 @@ python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx
 
 
 ## 小组README文件
+### 项目介绍-Emotionally Enhanced Talking Face Generation
+
+"情感增强的说话面部生成"这篇论文主要关注于通过加入广泛的情感范围来创建更加逼真和有说服力的说话面部视频。它解决了以往工作的局限性，这些工作通常无法创建逼真的视频，因为它们很少关注人物的表情和情感。本项目提出的框架旨在生成包含适当表情和情感的唇同步说话面部视频，使其更具说服力。
+
+### 项目功能
+说话面部生成：该框架基于基础骨架架构，使用2D-CNN编解码器网络生成单独的帧。这涉及到一个面部编码器、一个音频编码器和一个解码器，强调视觉质量和准确的唇同步生成。
+
+说话面部生成中的情感捕捉：这是关键部分，因为它涉及将情感信息包含在视频中。该方法将语音音频中表示的情感与视频生成的独立情感标签分开，提供了更多控制主题情感的方法。
+
+数据预处理和增强：该框架使用完全遮盖的帧以及参考帧来加入情感，因为情感不仅通过面部的嘴唇区域来表达。
+
+情感编码器：这将分类情感编码进视频生成过程。
 
 ### 环境要求（依赖）
 依赖库详见 requirements.txt。要求安装ffmpeg, 安装albumentations库
+
 
 ### 张卓远
 
@@ -252,6 +265,10 @@ python emogen_process.py --input_folder <folder_of_dataset> --preprocessed_root 
 在model/audio_driven_talkingface下添加conv.py , emogen_syncnet.py
 
 在trainer文件夹中添加color_syncnet_train.py, emotion_disc_train.py
+
+### 周扬
+填充了image_driven所需的模型文件，包括conv.py,emo_disc.py,emo_syncnet.py和wav2lip.py
+
 
 
 
