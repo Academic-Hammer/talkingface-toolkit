@@ -1,0 +1,12 @@
+ffmpeg-python
+opencv-python
+face_alignment
+scikit-learn
+pydub
+pynormalize
+soundfile
+librosa==0.9.1
+pysptk
+pyworld
+resemblyzer
+protobuf==3.20.0
