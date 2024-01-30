@@ -73,7 +73,7 @@ class Config(object):
         self._load_internal_config_dict(self.model, self.model_class, self.dataset)
         self.final_config_dict = self._get_final_config_dict()
         self._set_default_parameters()
-        self._init_device()
+        # self._init_device()
 
     def _init_parameters_category(self):
         self.parameters = dict()

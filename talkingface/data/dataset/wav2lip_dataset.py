@@ -1,7 +1,8 @@
 from os.path import dirname, join, basename, isfile
 from tqdm import tqdm
 from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
-import python_speech_features
+# 下面这个库似乎没用到，又无法安装，此处我直接注释掉了
+# import python_speech_features
 
 import torch
 from torch import nn

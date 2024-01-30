@@ -1,0 +1,37 @@
+model_params:
+    APC:
+        ckp_path: './checkpoints/live_speech_portraits/APC_epoch_160.model'
+        mel_dim: 80
+        hidden_size: 512
+        num_layers: 3
+        residual: false
+        use_LLE: 1
+        Knear: 10
+        LLE_percent: 1
+    Audio2Mouth:
+        ckp_path: './checkpoints/live_speech_portraits/McStay/checkpoints/Audio2Feature.pkl'
+        smooth: 2
+        AMP: ['XYZ', 1.5, 1.5, 1.5]  # method, x, y, z
+    Headpose:
+        ckp_path: './checkpoints/live_speech_portraits/McStay/checkpoints/Audio2Headpose.pkl'
+        sigma: 0.3
+        smooth: [5, 10]    # rot, trans
+        AMP: [1, 1]    # rot, trans
+        shoulder_AMP: 0.5
+    Image2Image:
+        ckp_path: './checkpoints/live_speech_portraits/McStay/checkpoints/Feature2Face.pkl'
+        size: 'normal'
+        save_input: 1
+        
+#我自己加的
+checkpoint_sub_dir: "/live_speech_portraits" # 和overall.yaml里checkpoint_dir拼起来作为最终目录
+temp_sub_dir: "/live_speech_portraits" # 和overall.yaml里temp_dir拼起来作为最终目录
+driving_audio_path: './checkpoints/live_speech_portraits/Input/00083.wav' #驱动音频路径
+save_intermediates: 0 #是否存储中间文件
+
+dataset_params:
+  root: './checkpoints/live_speech_portraits/McStay'
+  fit_data_path: './checkpoints/live_speech_portraits/McStay/3d_fit_data.npz'
+  pts3d_path: './checkpoints/live_speech_portraits/McStay/tracked3D_normalized_pts_fix_contour.npy'
+
+
