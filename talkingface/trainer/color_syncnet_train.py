@@ -1,8 +1,8 @@
 from os.path import dirname, join, basename, isfile, isdir
 from tqdm import tqdm
 
-from models import SyncNet_color as SyncNet
-import audio
+from model.audio_driven_talkingface.emogen_syncnet import SyncNet_color as SyncNet
+import data.dataprocess.audio
 
 import torch
 from torch import nn
@@ -16,7 +16,7 @@ from glob import glob
 
 import os, random, cv2, argparse
 import albumentations as A
-from hparams import hparams, get_image_list
+from data.dataset.hparams import hparams, get_image_list
 
 parser = argparse.ArgumentParser(description='Code to train the expert lip-sync discriminator')
 

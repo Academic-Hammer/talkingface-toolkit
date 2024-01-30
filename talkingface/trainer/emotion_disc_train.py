@@ -11,8 +11,8 @@ import torch.nn as nn
 from sklearn.metrics import accuracy_score
 from torch.utils.tensorboard import SummaryWriter
 
-from models import emo_disc
-from datagen_aug import Dataset
+from model.audio_driven_talkingface.emogen_emo_disc import emo_disc
+from data.dataset.dataset import Dataset
 
 def initParams():
     parser = argparse.ArgumentParser(description=__doc__)
