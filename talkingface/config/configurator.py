@@ -4,7 +4,8 @@ import sys
 import yaml
 from logging import getLogger
 from typing import Literal
-
+import torch
+torch.cuda.is_available()
 from talkingface.utils import(
     get_model,
     # Enum,
@@ -252,6 +253,11 @@ class Config(object):
         if isinstance(metrics, str):
             self.final_config_dict["metrics"] = [metrics]
 
+        # Check and set default value for 'checkpoint_sub_dir'
+        if "checkpoint_sub_dir" not in self.final_config_dict:
+            self.final_config_dict["checkpoint_sub_dir"] = "default_checkpoint_sub_dir"
+        if "temp_sub_dir" not in self.final_config_dict:
+            self.final_config_dict["temp_sub_dir"] = "default_temp_sub_dir"
         self.final_config_dict["checkpoint_dir"] = self.final_config_dict["checkpoint_dir"] + self.final_config_dict["checkpoint_sub_dir"]
         
         self.final_config_dict["temp_dir"] = self.final_config_dict['temp_dir'] +  self.final_config_dict['temp_sub_dir']
@@ -276,6 +282,7 @@ class Config(object):
             raise AttributeError(
                 f"'Config' object has no attribute 'final_config_dict'"
             )
+        
         if item in self.final_config_dict:
             return self.final_config_dict[item]
         raise AttributeError(f"'Config' object has no attribute '{item}'")

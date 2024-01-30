@@ -91,7 +91,8 @@ def run_talkingface(
 
     # model training
     if config['train']:
-        trainer.fit(train_data_loader, val_data_loader, saved=saved, show_progress=config["show_progress"])
+        pass
+        # trainer.fit(train_data_loader, val_data_loader, show_progress=config["show_progress"])
         # print(1)
 
     if not config['train'] and evaluate_model_file is None:

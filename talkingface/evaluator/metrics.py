@@ -98,13 +98,14 @@ class LSE(SyncMetric):
         # ========== ==========
             
         #print('Compute time %.3f sec.' % (time.time()-tS))
-
         dists = self.calc_pdist(im_feat,cc_feat,vshift=self.config['vshift'])
         mdist = torch.mean(torch.stack(dists,1),1)
 
         minval, minidx = torch.min(mdist,0)
+        # 在计算之前检查 vshift 是否为 None，如果是就赋予默认值 10
+        vshift = self.config['vshift'] if 'vshift' in self.config and self.config['vshift'] is not None else 10
 
-        offset = self.config['vshift']-minidx
+        offset = vshift-minidx
         conf   = torch.median(mdist) - minval
 
         fdist   = numpy.stack([dist[minidx].numpy() for dist in dists])
@@ -119,7 +120,7 @@ class LSE(SyncMetric):
 
 
     def calc_pdist(self, feat1, feat2, vshift=10):
-    
+        vshift = self.config['vshift'] if 'vshift' in self.config and self.config['vshift'] is not None else 10
         win_size = vshift*2+1
 
         feat2p = torch.nn.functional.pad(feat2,(0,0,vshift,vshift))
