@@ -16,6 +16,10 @@ if __name__ == "__main__":
     config_file_list = (
         args.config_files.strip().split(" ") if args.config_files else None
     )
+
+    print(config_file_list)
+    print(args)
+
     run(
         args.model,
         args.dataset,
