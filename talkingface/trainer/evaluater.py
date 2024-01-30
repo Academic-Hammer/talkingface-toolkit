@@ -6,6 +6,6 @@ trainer = Trainer()
 
 # 调用 evaluate 方法
 
-trainer.evaluate(model_file="D:/visual studio/talking face/checkpoints")
+trainer.evaluate(model_file="../../checkpoints")
 
 
