@@ -91,8 +91,3 @@ def meta_portrait_base_train(parser = None):
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     params.ngpus = torch.cuda.device_count()
     mp.spawn(main, nprocs=params.ngpus, args=(params,))
-# if __name__ == '__main__':
-#     params = get_params()
-#     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-#     params.ngpus = torch.cuda.device_count()
-#     mp.spawn(main, nprocs=params.ngpus, args=(params,))
