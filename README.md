@@ -23,11 +23,8 @@
 ```
 conda create -n talkingface python=3.8
 activate talkingface
-
 conda install ffmpeg
-
 pip install torch==1.13.1+cu116 torchvision==0.14.1+cu116 torchaudio==0.13.1+cu116 -f https://download.pytorch.org/whl/torch_stable.html  
-
 pip install cmake -i http://pypi.douban.com/simple --trusted-host pypi.douban.com
 pip install -r requirements.txt -i http://pypi.douban.com/simple --trusted-host pypi.douban.com
 ```
