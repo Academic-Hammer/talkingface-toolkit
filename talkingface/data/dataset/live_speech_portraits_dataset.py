@@ -730,6 +730,126 @@ class FaceDataset(BaseDataset):
         return 'FaceDataset'
 
 
-class live_speech_portraitsDataset(FaceDataset):
-    def __init__(self, opt, datasplit):
-        super().__init__(opt, datasplit)
+class live_speech_portraitsDataset(Dataset):
+
+    def __init__(self, config, datasplit):
+
+        self.opt = config
+        self.split = datasplit
+
+    @abstractmethod
+    def __getitem__(self, index):
+
+        # recover real index from compressed one
+        index_real = np.int32(index * self.frame_jump_stride)
+        # find which audio file and the start frame index
+        file_index = bisect.bisect_right(self.sample_start, index_real) - 1
+        current_frame = index_real - self.sample_start[file_index] + self.start_point[file_index]
+        current_target_length = self.target_length
+
+        if self.task == 'Audio2Feature':
+            # start point is current frame
+            A2Lsamples = self.audio_features[file_index][current_frame * 2: (current_frame + self.seq_len) * 2]
+            target_pts3d = self.feats[file_index][current_frame: current_frame + self.seq_len, self.indices].reshape(
+                self.seq_len, -1)
+
+            A2Lsamples = torch.from_numpy(A2Lsamples).float()
+            target_pts3d = torch.from_numpy(target_pts3d).float()
+
+            # [item_length, mel_channels, mel_width], or [item_length, APC_hidden_size]
+            return A2Lsamples, target_pts3d
+
+
+        elif self.task == 'Audio2Headpose':
+            if self.opt.feature_decoder == 'WaveNet':
+                # find the history info start points
+                A2H_history_start = current_frame - self.A2H_receptive_field
+                A2H_item_length = self.A2H_item_length
+                A2H_receptive_field = self.A2H_receptive_field
+
+                if self.half_audio_win == 1:
+                    A2Hsamples = self.audio_features[file_index][2 * (A2H_history_start + self.frame_future): 2 * (
+                                A2H_history_start + self.frame_future + A2H_item_length)]
+                else:
+                    A2Hsamples = np.zeros([A2H_item_length, self.audio_window, 512])
+                    for i in range(A2H_item_length):
+                        A2Hsamples[i] = self.audio_features[file_index][
+                                        2 * (A2H_history_start + i) - self.half_audio_win: 2 * (
+                                                    A2H_history_start + i) + self.half_audio_win]
+
+                if self.predict_len == 0:
+                    target_headpose = self.headposes[file_index][
+                                      A2H_history_start + A2H_receptive_field: A2H_history_start + A2H_item_length + 1]
+                    history_headpose = self.headposes[file_index][
+                                       A2H_history_start: A2H_history_start + A2H_item_length].reshape(A2H_item_length,
+                                                                                                       -1)
+
+                    target_velocity = self.velocity_pose[file_index][
+                                      A2H_history_start + A2H_receptive_field: A2H_history_start + A2H_item_length + 1]
+                    history_velocity = self.velocity_pose[file_index][
+                                       A2H_history_start: A2H_history_start + A2H_item_length].reshape(A2H_item_length,
+                                                                                                       -1)
+                    target_info = torch.from_numpy(
+                        np.concatenate([target_headpose, target_velocity], axis=1).reshape(current_target_length,
+                                                                                           -1)).float()
+                else:
+                    history_headpose = self.headposes[file_index][
+                                       A2H_history_start: A2H_history_start + A2H_item_length].reshape(A2H_item_length,
+                                                                                                       -1)
+                    history_velocity = self.velocity_pose[file_index][
+                                       A2H_history_start: A2H_history_start + A2H_item_length].reshape(A2H_item_length,
+                                                                                                       -1)
+
+                    target_headpose_ = self.headposes[file_index][
+                                       A2H_history_start + A2H_receptive_field - self.predict_len: A2H_history_start + A2H_item_length + 1 + self.predict_len + 1]
+                    target_headpose = np.zeros([current_target_length, self.predict_length, target_headpose_.shape[1]])
+                    for i in range(current_target_length):
+                        target_headpose[i] = target_headpose_[i: i + self.predict_length]
+                    target_headpose = target_headpose  # .reshape(current_target_length, -1, order='F')
+
+                    target_velocity_ = self.headposes[file_index][
+                                       A2H_history_start + A2H_receptive_field - self.predict_len: A2H_history_start + A2H_item_length + 1 + self.predict_len + 1]
+                    target_velocity = np.zeros([current_target_length, self.predict_length, target_velocity_.shape[1]])
+                    for i in range(current_target_length):
+                        target_velocity[i] = target_velocity_[i: i + self.predict_length]
+                    target_velocity = target_velocity  # .reshape(current_target_length, -1, order='F')
+
+                    target_info = torch.from_numpy(
+                        np.concatenate([target_headpose, target_velocity], axis=2).reshape(current_target_length,
+                                                                                           -1)).float()
+
+                A2Hsamples = torch.from_numpy(A2Hsamples).float()
+
+                history_info = torch.from_numpy(np.concatenate([history_headpose, history_velocity], axis=1)).float()
+
+                # [item_length, mel_channels, mel_width], or [item_length, APC_hidden_size]
+                return A2Hsamples, history_info, target_info
+
+
+            elif self.opt.feature_decoder == 'LSTM':
+                A2Hsamples = self.audio_features[file_index][
+                             current_frame * 2: (current_frame + self.opt.A2H_receptive_field) * 2]
+
+                target_headpose = self.headposes[file_index][
+                                  current_frame: current_frame + self.opt.A2H_receptive_field]
+                target_velocity = self.velocity_pose[file_index][
+                                  current_frame: current_frame + self.opt.A2H_receptive_field]
+                target_info = torch.from_numpy(
+                    np.concatenate([target_headpose, target_velocity], axis=1).reshape(self.opt.A2H_receptive_field,
+                                                                                       -1)).float()
+
+                A2Hsamples = torch.from_numpy(A2Hsamples).float()
+
+                # [item_length, mel_channels, mel_width], or [item_length, APC_hidden_size]
+                return A2Hsamples, target_info
+
+    @abstractmethod
+    def __len__(self):
+        """Return the total number of images in the dataset."""
+        if self.opt.train:
+            return self.total_len
+        else:
+            return 1
+
+    def modify_commandline_options(parser, is_train):
+        return parser
