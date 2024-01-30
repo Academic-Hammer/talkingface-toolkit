@@ -1,7 +1,7 @@
 # talkingface-toolkit小组作业
 小组成员名单:陈清扬 高艺芙 贺芳琪
 # 模型选择：
-我们选择复现的模型是StarGAN-VC模型，是专为语音转换任务设计的模型。它是StarGAN框架的延伸，该框架最初用于图像到图像的转换任务。StarGAN-VC专注于将一个说话者的语音特征转换为另一个说话者。
+我们选择复现的模型是[StarGAN-VC](https://github.com/kamepong/StarGAN-VC)模型，是专为语音转换任务设计的模型。它是StarGAN框架的延伸，该框架最初用于图像到图像的转换任务。StarGAN-VC专注于将一个说话者的语音特征转换为另一个说话者。
 # 作业环境
 # 数据集
 # 运行说明
