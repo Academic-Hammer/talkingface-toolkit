@@ -1,4 +1,5 @@
 import logging
+import subprocess
 import sys
 import torch.distributed as dist
 from collections.abc import MutableMapping
@@ -21,6 +22,7 @@ from talkingface.utils import (
     create_dataset
 )
 
+
 def run(
         model,
         dataset,
@@ -38,6 +40,7 @@ def run(
         evaluate_model_file=evaluate_model_file,
     )
     return res
+
 
 def run_talkingface(
         model=None,
@@ -58,6 +61,13 @@ def run_talkingface(
         queue (torch.multiprocessing.Queue, optional): The queue used to pass the result to the main process. Defaults to ``None``.
     """
 
+
+# Path to the inference_single.py script
+inference_script_path = "talkingface/model/audio_driven_talkingface/IPLAP/inference_single.py"
+# Run the inference script using subprocess
+subprocess.run(["python", inference_script_path], check=True)
+
+'''
     config = Config(
         model=model,
         dataset=dataset,
@@ -98,8 +108,5 @@ def run_talkingface(
         print("error: no model file to evaluate without training")
         return
     # model evaluating
-    trainer.evaluate(model_file = evaluate_model_file)
-
-    
-
-
+    trainer.evaluate(model_file = evaluate_model_file) 
+'''

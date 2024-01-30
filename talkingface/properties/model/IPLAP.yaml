@@ -1,0 +1,68 @@
+model: "IPLAP"
+config_path: "talkingface/properties/model/IPLAP.yaml"
+device: "cuda"
+batch_size: 32
+max_len: 400
+pretrained_model: "talkingface/model/audio_driven_talkingface/IPLAP/test/checkpoints"
+temp_dir: "tempfile_of_test_result"
+
+train_filelist: "dataset/lrs2/filelists/test.txtt"
+test_filelist: "dataset/lrs2/filelists/train.txt"
+val_filelist: "dataset/lrs2/filelists/val.txt"
+
+
+model_params:
+
+  dim_in: 64
+  hidden_dim: 512
+  max_conv_dim: 512
+  n_layer: 3
+  n_mels: 80
+
+  n_token: 178 # number of phoneme tokens
+  max_dur: 50 # maximum duration of a single phoneme
+  style_dim: 128 # style vector size
+  
+  dropout: 0.2
+
+  # config for decoder
+  decoder:
+    type: 'istftnet' # either hifigan or istftnet
+    resblock_kernel_sizes: [ 3,7,11 ]
+    upsample_rates: [ 10, 6 ]
+    upsample_initial_channel: 512
+    resblock_dilation_sizes: [ [ 1,3,5 ], [ 1,3,5 ], [ 1,3,5 ] ]
+    upsample_kernel_sizes: [ 20, 12 ]
+    gen_istft_n_fft: 20
+    gen_istft_hop_size: 5
+
+  # speech language model config
+  render:
+
+    sr: 16000 # sampling rate of SLM
+    hidden: 768 # hidden size of SLM
+    nlayers: 13 # number of layers of SLM
+    initial_channel: 64 # initial channels of SLM discriminator head
+    sigma_data: 0.2 # placeholder for estimate_sigma_data set to false
+    estimate_sigma_data: true # estimate sigma_data from the current batch if set to true
+    mean: -3.0
+    std: 1.0
+
+
+landmarks_generator_params:
+
+  embedding_mask_proba: 0.1
+  # transformer config
+  transformer:
+    num_layers: 3
+    num_heads: 8
+    head_features: 64
+    multiplier: 2
+
+  min_len: 400 # minimum length of samples
+  max_len: 500 # maximum length of samples
+  batch_percentage: 0.5 # to prevent out of memory, only use half of the original batch size
+  iter: 10
+  scale: 0.01
+  sig: 1.5
+  
