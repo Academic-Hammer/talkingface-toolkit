@@ -237,9 +237,15 @@ python emogen_dataprocess.py --inputfolder <folder_of_dataset> --preprocessed_ro
 
 ### 蒋政
 完成训练部分代码编写，实现专家口型同步鉴别器模型
+
 修改requirements.txt
+
 修改utils文件夹中的utils.py
-在model文件夹中添加conv.py, syncnet.py, wav2lip.py，修改__init__.py
+
+在model文件夹中添加 wav2lip.py，修改__init__.py
+
+在model/audio_driven_talkingface下添加conv.py , emogen_syncnet.py
+
 在trainer文件夹中添加color_syncnet_train.py, emotion_disc_train.py
 
 
