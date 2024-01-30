@@ -104,7 +104,6 @@ class Trainer(AbstractTrainer):
                 "The parameters [weight_decay] and [reg_weight] are specified simultaneously, "
                 "which may lead to double regularization."
             )
-
         if learner.lower() == "adam":
             optimizer = optim.Adam(params, lr=learning_rate, weight_decay=weight_decay)
         elif learner.lower() == "adamw":
@@ -433,7 +432,9 @@ class Trainer(AbstractTrainer):
         """
         if load_best_model:
             checkpoint_file = model_file or self.saved_model_file
+            print(checkpoint_file)
             checkpoint = torch.load(checkpoint_file, map_location=self.device)
+            print(checkpoint)
             self.model.load_state_dict(checkpoint["state_dict"])
             self.model.load_other_parameter(checkpoint.get("other_parameter"))
             message_output = "Loading model structure and parameters from {}".format(
@@ -441,16 +442,16 @@ class Trainer(AbstractTrainer):
             )
             self.logger.info(message_output)
         self.model.eval()
-
+        
         datadict = self.model.generate_batch()
         eval_result = self.evaluator.evaluate(datadict)
         self.logger.info(eval_result)
 
 
 
-class Wav2LipTrainer(Trainer):
+class PC_AVSTrainer(Trainer):
     def __init__(self, config, model):
-        super(Wav2LipTrainer, self).__init__(config, model)
+        super(PC_AVSTrainer, self).__init__(config, model)
 
     def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
         r"""Train the model in an epoch
@@ -554,4 +555,21 @@ class Wav2LipTrainer(Trainer):
         if losses_dict["sync_loss"] < .75:
             self.model.config["syncnet_wt"] = 0.01
         return average_loss_dict
+    def evaluate(self, load_best_model=True, model_file=None):
+    # if load_best_model:
+    #     checkpoint_file = model_file or self.saved_model_file
+    #     print(checkpoint_file)
+    #     checkpoint = torch.load(checkpoint_file, map_location=self.device)
+    #     print(checkpoint)
+    #     self.model.load_state_dict(checkpoint["state_dict"])
+    #     self.model.load_other_parameter(checkpoint.get("other_parameter"))
+    #     message_output = "Loading model structure and parameters from {}".format(
+    #         checkpoint_file
+    #     )
+    #     self.logger.info(message_output)
+        self.model.eval()
+
+        datadict = self.model.generate_batch()
+        eval_result = self.evaluator.evaluate(datadict)
+        self.logger.info(eval_result)
     
