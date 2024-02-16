@@ -1,1 +1,0 @@
-from talkingface.config.configurator import Config
