@@ -43,18 +43,14 @@ def get_model(model_name):
         Recommender: model class
     """
     model_submodule = [
-        "audio_driven_talkingface",
-        "image_driven_talkingface",
-        "nerf_based_talkingface",
-        "text_to_speech",
-        "voice_conversion"
-
+        "audio_driven_talkingface"
     ]
 
     model_file_name = model_name.lower()
     model_module = None
     for submodule in model_submodule:
         module_path = ".".join(["talkingface.model", submodule, model_file_name])
+        print(module_path)
         if importlib.util.find_spec(module_path, __name__):
             model_module = importlib.import_module(module_path, __name__)
             break
@@ -443,13 +439,12 @@ def create_dataset(config):
             "`dataset_file_name` [{}] is not the name of an existing dataset.".format(dataset_file_name)
         )
     dataset_class = getattr(dataset_module, model_name+'Dataset')
+    # 创建并打印训练和验证数据集的实例
+    train_dataset_instance = dataset_class(config, config['train_filelist'])
+    val_dataset_instance = dataset_class(config, config['val_filelist'])
 
-    return dataset_class(config, config['train_filelist']), dataset_class(config, config['val_filelist'])
+    print("训练数据集实例:", train_dataset_instance)
+    print("验证数据集实例:", val_dataset_instance)
 
-
-
-
-
-
-
+    return train_dataset_instance, val_dataset_instance
 

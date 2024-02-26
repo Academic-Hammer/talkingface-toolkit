@@ -1,22 +1,17 @@
-from os.path import dirname, join, basename, isfile
-from tqdm import tqdm
-from talkingface.data.dataprocess.wav2lip_process import Wav2LipAudio
-
 import torch
 import numpy as np
-import librosa
 from talkingface.data.dataset.dataset import Dataset
-
+from os.path import dirname, join, basename, isfile
 from glob import glob
+from talkingface.data.dataprocess.hyperlipsbase_process import HyperLipsBaseAudio
+import os, random, cv2
 
-import os, random, cv2, argparse
-
-
-class Wav2LipDataset(Dataset):
+class HyperLipsBaseDataset(Dataset):
     def __init__(self, config, datasplit):
         super().__init__(config, datasplit)
         self.all_videos = self.get_image_list(self.config['preprocessed_root'], datasplit)
-        self.audio_processor = Wav2LipAudio(self.config)
+        self.audio_processor = HyperLipsBaseAudio(self.config)
+        # print('HyperLipsBaseDataset')
 
     def get_image_list(self, data_root, split_path):
         filelist = []
