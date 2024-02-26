@@ -155,4 +155,4 @@ class Wav2LipDataset(Dataset):
             # breakpoint()
             indiv_mels = torch.FloatTensor(indiv_mels).unsqueeze(1)
             y = torch.FloatTensor(y)
-            return {"input_frames":x, "indiv_mels":indiv_mels, "mels":mel, "gt":y}
+            return {"input_frames":x, "indiv_mels":indiv_mels, "mels":mel, "gt":y} #[T, H, W, 3]
