@@ -5,7 +5,7 @@ from collections.abc import MutableMapping
 from logging import getLogger
 import os
 from torch.utils import data as data_utils
-from ray import tune
+# from ray import tune
 
 from talkingface.config import Config
 
@@ -21,13 +21,17 @@ from talkingface.utils import (
     create_dataset
 )
 
+from talkingface.quick_start.meta_portrait_base_train import meta_portrait_base_train
+from talkingface.quick_start.meta_portrait_base_inference import meta_portrait_base_inference
+
 def run(
         model,
         dataset,
         config_file_list=None,
         config_dict=None,
         saved=True,
-        evaluate_model_file=None
+        evaluate_model_file=None,
+        parser=None
 ):
     res = run_talkingface(
         model=model,
@@ -36,6 +40,7 @@ def run(
         config_dict=config_dict,
         saved=saved,
         evaluate_model_file=evaluate_model_file,
+        parser=parser
     )
     return res
 
@@ -46,7 +51,8 @@ def run_talkingface(
         config_dict=None,
         saved=True,
         queue=None,
-        evaluate_model_file=None
+        evaluate_model_file=None,
+        parser=None
 ):
     """A fast running api, which include the complete process of training and testing a model on a specified dataset
     Args:
@@ -57,7 +63,13 @@ def run_talkingface(
         saved (bool, optional): Whether to save the model. Defaults to ``True``.
         queue (torch.multiprocessing.Queue, optional): The queue used to pass the result to the main process. Defaults to ``None``.
     """
-
+    if "metaportraitbasetrain" in model:
+        meta_portrait_base_train(parser)
+        return
+    elif "metaportraitbaseinference" in model:
+        meta_portrait_base_inference(parser)
+        return
+    
     config = Config(
         model=model,
         dataset=dataset,
