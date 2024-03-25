@@ -1,0 +1,12 @@
+flen: 1024
+fmax: 7600
+fmin: 80
+fs: 16000
+fshift: 128
+num_mels: 80
+top_db: 30
+trim_silence: false
+stat_path: "./dataset/vctk/filelist/stat.pkl"
+data_path: "./dataset/vctk/data"
+model: "stargan_vc"
+train_filelist: "./dataset/vctk/filelist/train.txt"

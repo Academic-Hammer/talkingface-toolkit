@@ -1,0 +1,24 @@
+BatchSize: 12
+arch_type: conv
+epochs: 2000
+gradient_clip: 1.0
+hdim: 64
+loss_type: wgan
+lrate_d: 5.0e-06
+lrate_g: 0.0005
+mdim: 32
+n_spk: 3
+normtype: IN
+num_mels: 80
+sdim: 16
+spk_list:
+- spk_1
+- spk_2
+- spk_3
+src_conditioning: false
+w_adv: 1.0
+w_cls: 1.0
+w_cyc: 1.0
+w_grad: 1.0
+w_rec: 1.0
+zdim: 16
