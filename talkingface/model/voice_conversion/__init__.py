@@ -1,0 +1,1 @@
+from talkingface.model.voice_conversion.diffvc import diffvc
