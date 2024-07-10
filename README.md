@@ -1,210 +1,213 @@
-# talkingface-toolkit
-## 框架整体介绍
-### checkpoints
-主要保存的是训练和评估模型所需要的额外的预训练模型，在对应文件夹的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/checkpoints/README.md)有更详细的介绍
+# Identity-Preserving Talking Face Generation with Landmark and Appearance Priors 论文代码复现
 
-### datset
-存放数据集以及数据集预处理之后的数据，详细内容见dataset里的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/dataset/README.md)
+> **陶雪松     1120210485**
 
-### saved
-存放训练过程中保存的模型checkpoint, 训练过程中保存模型时自动创建
+<img alt="Static Badge" src="https://img.shields.io/badge/build-passing-green"><img alt="Static Badge" src="https://img.shields.io/badge/language-python-orange">
 
-### talkingface
-主要功能模块，包括所有核心代码
+原论文链接：[[Paper]](https://arxiv.org/abs/2305.08293) 
 
-#### config
-根据模型和数据集名称自动生成所有模型、数据集、训练、评估等相关的配置信息
+源代码链接：[[Code]](https://github.com/Weizhi-Zhong/IP_LAP) 
+
+本人复现代码链接：[[仓库地址]](https://github.com/Tao-xuesong/talkingface-toolkit)
+
+## 环境配置
+- Python 3.10
+- torch 1.13.0+cu117（本地复现使用，采用框架所给版本也可以正常运行）
+- torchvision 0.14.0+cu117（本地复现使用，采用框架所给版本也可以正常运行）
+- ffmpeg
+
+在框架相关环境`requirements.txt`配置结束后，请运行以下命令配置运行本模型所需的额外依赖：
 ```
-config/
-
-├── configurator.py
-
+pip install -r requirements_IPLAP.txt
 ```
-#### data
-- dataprocess：模型特有的数据处理代码，（可以是对方仓库自己实现的音频特征提取、推理时的数据处理）。如果实现的模型有这个需求，就要建立一对应的文件
-- dataset：每个模型都要重载`torch.utils.data.Dataset` 用于加载数据。每个模型都要有一个`model_name+'_dataset.py'`文件. `__getitem__()`方法的返回值应处理成字典类型的数据。 <span style="color:red">(核心部分)</span>
-```
-data/
+**冲突说明**：librosa由于在0.10.1版本进行了方法的更新有些方法的参数被取消了，使用框架中的版本会在运行时发生错误，需保留0.9.2版本才能正常运行。
 
-├── dataprocess
-
-| ├── wav2lip_process.py
-
-| ├── xxxx_process.py
-
-├── dataset
-
-| ├── wav2lip_dataset.py
-
-| ├── xxx_dataset.py
+```python
+librosa==0.9.2
 ```
 
-#### evaluate
-主要涉及模型评估的代码
-LSE metric 需要的数据是生成的视频列表
-SSIM metric 需要的数据是生成的视频和真实的视频列表
+## 模型简介
 
-#### model
-实现的模型的网络和对应的方法 <span style="color:red">（核心部分）</span>
+![framework](./md_pictures/framework.png)
 
-主要分三类：
-- audio-driven (音频驱动)
-- image-driven （图像驱动）
-- nerf-based （基于神经辐射场的方法）
+IPLAP实现了一个包含音频到特征点生成和特征点到视频渲染的两阶段框架。首先，模型利用一个基于Transformer的特征点生成器，从音频中推断出嘴唇和下颌的特征点。在这一过程中，模型使用发言者面部的姿态先验特征，使生成的特征点与发言者的面部轮廓一致。之后，模型通过视频渲染器，将生成的特征点转换为面部图像。在这个阶段，模型将从下半部分被遮挡的目标面部和静态参考图像中提取先验外观信息，这有助于生成逼真且保留身份信息的视觉内容。为了有效探索静态参考图像的先验信息，视频渲染器根据运动场将静态参考图像与目标面部的姿态和表情对齐，并且再次使用音频中提取到的听觉特征以确保生成的面部图像与音频保持同步。经过复现与测试，相较于其他传统方法，该模型的确能够产生更为逼真、嘴唇同步且保留身份信息的视频。
 
-```
-model/
+## 快速启动
 
-├── audio_driven_talkingface
+### 快速启动说明
 
-| ├── wav2lip.py
+原作者使用了4个24G RTX3090在CUDA 11.1环境下进行了训练，我复现代码时将相关的多GPU训练修改为单卡训练，但由于本人轻薄本的显卡仅有2G显存，性能实在有限，进行训练的时间过长，反馈很慢。故快速启动仅展示了模型的评估过程。模型中特征生成器和视频渲染器两个网络的训练过程将在后续的分步操作中给出。
 
-├── image_driven_talkingface
+### 运行快速启动
 
-| ├── xxxx.py
+首先，从[jianguoyun](https://www.jianguoyun.com/p/DeXpK34QgZ-EChjI9YcFIAA)中下载好预训练参数, 并将它们放置到 `talkingface/model/audio_driven_talkingface/IPLAP/test/checkpoints`中 。
 
-├── nerf_based_talkingface
-
-| ├── xxxx.py
-
-├── abstract_talkingface.py
+在终端输入以下命令，模型将进行Talking face视频生成并输出评估结果，模型保存在项目根目录下的`test_result`文件夹中，生成模型过程中产生的中间文件（调整帧率后的输入视频、与音频合成前的带有人脸草图的生成视频）保存在项目根目录下的`tempfile_of_test_result`文件夹中。
 
 ```
-
-#### properties
-保存默认配置文件，包括：
-- 数据集配置文件
-- 模型配置文件
-- 通用配置文件
-
-需要根据对应模型和数据集增加对应的配置文件，通用配置文件`overall.yaml`一般不做修改
-```
-properties/
-
-├── dataset
-
-| ├── xxx.yaml
-
-├── model
-
-| ├── xxx.yaml
-
-├── overall.yaml
-
+python run_talkingface.py --model=IPLAP –dataset=lrs2
 ```
 
-#### quick_start
-通用的启动文件，根据传入参数自动配置数据集和模型，然后训练和评估（一般不需要修改）
+运行程序后，输出信息如下所示：
+
+![img_5](./md_pictures/img_5.png)
+
+![img_6](./md_pictures/img_6.png)
+
+![image-20240130173802565](./md_pictures/img_17.png)
+
+![img_7](./md_pictures/img_7.png)
+
+![img_8](./md_pictures/img_8.png)
+
+![img_9](./md_pictures/img_9.png)
+
+等待评估结束后（预留的测试视频一般需要处理15-20分钟左右），程序输出信息与评估结果如下：
+
+![img_10](./md_pictures/img_10.png)
+
+![img_11](./md_pictures/img_11.png)
+
+![img_12](./md_pictures/img_12.png)
+
+![img_13](./md_pictures/img_13.png)
+
+![img_14](./md_pictures/img_14.png)
+
+最终可以在`tempfile_of_test_result`文件夹中查看中间文件，在`test_result`文件夹中查看生成结果。
+
+![img_15](./md_pictures/img_15.png)
+
+![img_16](./md_pictures/img_16.png)
+
+最终生成Talking Face视频的效果展示如下（均保留了人脸草图）：
+
+这是LRS2数据集中的第129个视频中处理得到的人脸图像基于我所截取的一段外国新闻语音生成的视频。
+
+
+
+https://github.com/Tao-xuesong/talkingface-toolkit/assets/104686841/5093e1de-f58d-4ce4-ac77-d4b11926a6e0
+
+
+
+以下视频的人像来自于我所截取的中国新闻联播的视频片段，视频的语音使用了和上一个视频相同的外国新闻语音。
+
+
+
+https://github.com/Tao-xuesong/talkingface-toolkit/assets/104686841/cf68236e-9d5a-4116-ad58-2ca5fe49878d
+
+
+
+以下视频的人像来自于我所截取的外国新闻节目的视频片段，视频的语音使用了截取自另一段访谈节目的男性语音。
+
+
+
+
+https://github.com/Tao-xuesong/talkingface-toolkit/assets/104686841/491df4d5-76c2-452e-8494-02dbf1d52e52
+
+
+
+
+## 分步操作
+
+这一部分给出了运行模型的分步操作，以便能在性能足够的环境中运行数据集的预处理以及两个网络的训练程序。
+
+## 预处理与训练
+
+### 下载 LRS2 数据集
+模型在LRS2上训练. 请前往[LRS2](https://www.robots.ox.ac.uk/~vgg/data/lip_reading/lrs2.html)网站下载数据集。LRS2 数据集文件夹结构如下：
 ```
-quick_start/
+data_root (mvlrs_v1)
+├── main, pretrain (I use only main folder in this work)
+|	├── list of folders
+|	│   ├── five-digit numbered video IDs ending with (.mp4)
+```
+main 文件夹是下面提到的 lrs2。
 
-├── quick_start.py
+### 预处理音频
+通过运行以下命令从视频文件中提取原始音频和 Mel 频谱特征：
+```
+# 确保当前项目根目录（talkingface-toolkit-main）已经添加到了 PYTHONPATH 环境变量中，防止后续软件包无法正确导入（路径设置为根目录所在路径）
+
+set PYTHONPATH=/your/path/to/talkingface-toolkit-main;%PYTHONPATH%
+
+# 运行以下程序预处理音频，预处理后的音频保存在dataset/lrs2/lrs2_preprocessed/lrs2_audio中
+
+python talkingface/data/dataprocess/IPLAP_process/preprocess_audio.py
+
+# 如果想要修改原始视频数据位置或更改预处理后音频的保存位置可以传入“--data_root”和“--out_root”参数
+
+python preprocess_audio.py --data_root ....../lrs2/ --out_root ..../lrs2_audio
 
 ```
+处理完成后的效果(带有数据集时预处理较慢，此截图为处理空数据集结果)
 
-#### trainer
-训练、评估函数的主类。在trainer中，如果可以使用基类`Trainer`实现所有功能，则不需要写一个新的。如果模型训练有一些特有部分，则需要重载`Trainer`。需要重载部分可能主要集中于: `_train_epoch()`, `_valid_epoch()`。 重载的`Trainer`应该命名为：`{model_name}Trainer`
+![img1](./md_pictures/img_0.png)
+
+![img](./md_pictures/img.png)
+
+### 预处理视频的面部
+
+通过运行以下命令从视频文件中提取裁剪的面部、特征点和草图
+
 ```
-trainer/
+# 运行以下程序预处理视频面部，预处理后的裁剪面部、特征点和草图文件分别保存在dataset/lrs2/lrs2_preprocessed下的三个文件夹中
 
-├── trainer.py
+python talkingface/data/dataprocess/IPLAP_process/preprocess_video.py
 
-```
+# 如果想要修改原始视频数据位置或更改预处理后的裁剪面部、特征点和草图文件的保存位置可以传入“--dataset_video_root”、“--output_sketch_root”、“--output_face_root”和“--output_landmark_root”参数
 
-#### utils
-公用的工具类，包括`s3fd`人脸检测，视频抽帧、视频抽音频方法。还包括根据参数配置找对应的模型类、数据类等方法。
-一般不需要修改，但可以适当添加一些必须的且相对普遍的数据处理文件。
-
-## 使用方法
-### 环境要求
-- `python=3.8`
-- `torch==1.13.1+cu116`（gpu版，若设备不支持cuda可以使用cpu版）
-- `numpy==1.20.3`
-- `librosa==0.10.1`
-
-尽量保证上面几个包的版本一致
-
-提供了两种配置其他环境的方法：
-```
-pip install -r requirements.txt
-
-or
-
-conda env create -f environment.yml
+python preprocess_video.py --dataset_video_root ....../lrs2/ --output_sketch_root ..../lrs2_sketch --output_face_root ..../lrs2_face --output_landmark_root ..../lrs2_landmarks
 ```
 
-建议使用conda虚拟环境！！！
+处理完成后的效果(带有数据集时预处理较慢，此截图为处理空数据集结果)
 
-### 训练和评估
+![img_1](./md_pictures/img_1.png)
 
-```bash
-python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx)
+![img_2](./md_pictures/img_2.png)
+
+### 训练特征点生成器
+
+通过运行以下命令训练特征点生成器网络
+
+```
+# 预处理的文件保存在默认位置直接运行即可
+python talkingface/model/audio_driven_talkingface/IPLAP/train_landmarks_generator.py
+
+# 如果之前修改了原始数据位置请传入相应参数
+python talkingface/model/audio_driven_talkingface/IPLAP/train_landmarks_generator.py --pre_audio_root ..../lrs2_audio --landmarks_root ..../lrs2_landmarks
 ```
 
-### 权重文件
+读取train.txt文件，开始训练时输出如下：
 
-- LSE评估需要的权重: syncnet_v2.model [百度网盘下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
-- wav2lip需要的lip expert 权重：lipsync_expert.pth [百度网下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
+![img_3](./md_pictures/img_3.png)
 
-## 可选论文：
-### Aduio_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| MakeItTalk | [paper](https://arxiv.org/abs/2004.12992) | [code](https://github.com/yzhou359/MakeItTalk) |
-| MEAD | [paper](https://wywu.github.io/projects/MEAD/support/MEAD.pdf) | [code](https://github.com/uniBruce/Mead) |
-| RhythmicHead | [paper](https://arxiv.org/pdf/2007.08547v1.pdf) | [code](https://github.com/lelechen63/Talking-head-Generation-with-Rhythmic-Head-Motion) |
-| PC-AVS | [paper](https://arxiv.org/abs/2104.11116) | [code](https://github.com/Hangz-nju-cuhk/Talking-Face_PC-AVS) |
-| EVP | [paper](https://openaccess.thecvf.com/content/CVPR2021/papers/Ji_Audio-Driven_Emotional_Video_Portraits_CVPR_2021_paper.pdf) | [code](https://github.com/jixinya/EVP) |
-| LSP | [paper](https://arxiv.org/abs/2109.10595) | [code](https://github.com/YuanxunLu/LiveSpeechPortraits) |
-| EAMM | [paper](https://arxiv.org/pdf/2205.15278.pdf) | [code](https://github.com/jixinya/EAMM/) |
-| DiffTalk | [paper](https://arxiv.org/abs/2301.03786) | [code](https://github.com/sstzal/DiffTalk) |
-| TalkLip | [paper](https://arxiv.org/pdf/2303.17480.pdf) | [code](https://github.com/Sxjdwang/TalkLip) |
-| EmoGen | [paper](https://arxiv.org/pdf/2303.11548.pdf) | [code](https://github.com/sahilg06/EmoGen) |
-| SadTalker | [paper](https://arxiv.org/abs/2211.12194) | [code](https://github.com/OpenTalker/SadTalker) |
-| HyperLips | [paper](https://arxiv.org/abs/2310.05720) | [code](https://github.com/semchan/HyperLips) |
-| PHADTF | [paper](http://arxiv.org/abs/2002.10137) | [code](https://github.com/yiranran/Audio-driven-TalkingFace-HeadPose) |
-| VideoReTalking | [paper](https://arxiv.org/abs/2211.14758) | [code](https://github.com/OpenTalker/video-retalking#videoretalking--audio-based-lip-synchronization-for-talking-head-video-editing-in-the-wild-)
-|                                 |
+### 训练视频渲染器
 
+通过运行以下命令训练视频渲染器网络：
+```
+# 预处理的文件保存在默认位置直接运行即可
+python talkingface/model/audio_driven_talkingface/IPLAP/train_video_renderer.py
 
+# 如果之前修改了原始数据位置请传入相应参数
+python talkingface/model/audio_driven_talkingface/IPLAP/train_video_renderer.py --sketch_root ..../lrs2_sketch --face_img_root ..../lrs2_face  --audio_root ..../lrs2_audio
+```
+请注意，翻译模块只会在 25 个 epoch 后开始训练，因此 fid 和 running_gen_loss 只会在第 25 个 epoch 后开始下降。
 
-### Image_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| PIRenderer | [paper](https://arxiv.org/pdf/2109.08379.pdf) | [code](https://github.com/RenYurui/PIRender) |
-| StyleHEAT | [paper](https://arxiv.org/pdf/2203.04036.pdf) | [code](https://github.com/OpenTalker/StyleHEAT) |
-| MetaPortrait | [paper](https://arxiv.org/abs/2212.08062) | [code](https://github.com/Meta-Portrait/MetaPortrait) |
-|                                 |
-### Nerf-based talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| AD-NeRF | [paper](https://arxiv.org/abs/2103.11078) | [code](https://github.com/YudongGuo/AD-NeRF) |
-| GeneFace | [paper](https://arxiv.org/abs/2301.13430) | [code](https://github.com/yerfor/GeneFace) |
-| DFRF | [paper](https://arxiv.org/abs/2207.11770) | [code](https://github.com/sstzal/DFRF) |
-|                                 |
-### text_to_speech
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| VITS | [paper](https://arxiv.org/abs/2106.06103) | [code](https://github.com/jaywalnut310/vits) |
-| Glow TTS | [paper](https://arxiv.org/abs/2005.11129) | [code](https://github.com/jaywalnut310/glow-tts) |
-| FastSpeech2 | [paper](https://arxiv.org/abs/2006.04558v1) | [code](https://github.com/ming024/FastSpeech2) |
-| StyleTTS2 | [paper](https://arxiv.org/abs/2306.07691) | [code](https://github.com/yl4579/StyleTTS2) |
-| Grad-TTS | [paper](https://arxiv.org/abs/2105.06337) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/Grad-TTS) | 
-| FastSpeech | [paper](https://arxiv.org/abs/1905.09263) | [code](https://github.com/xcmyz/FastSpeech) |
-|                                 |
-### voice_conversion
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| StarGAN-VC | [paper](http://www.kecl.ntt.co.jp/people/kameoka.hirokazu/Demos/stargan-vc2/index.html) | [code](https://github.com/kamepong/StarGAN-VC) |
-| Emo-StarGAN | [paper](https://www.researchgate.net/publication/373161292_Emo-StarGAN_A_Semi-Supervised_Any-to-Many_Non-Parallel_Emotion-Preserving_Voice_Conversion) | [code](https://github.com/suhitaghosh10/emo-stargan) |
-| adaptive-VC | [paper](https://arxiv.org/abs/1904.05742) | [code](https://github.com/jjery2243542/adaptive_voice_conversion) |
-| DiffVC | [paper](https://arxiv.org/abs/2109.13821) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/DiffVC) |
-| Assem-VC | [paper](https://arxiv.org/abs/2104.00931) | [code](https://github.com/maum-ai/assem-vc) |
-|               |
+视频渲染器开始训练后输出如下：
 
-## 作业要求
-- 确保可以仅在命令行输入模型和数据集名称就可以训练、验证。（部分仓库没有提供训练代码的，可以不训练）
-- 每个组都要提交一个README文件，写明完成的功能、最终实现的训练、验证截图、所使用的依赖、成员分工等。
+**注意：**开始训练后，一些相关网络权重将自动从GitHub上在线下载，请确保网络能够连接上GitHub！
 
+![img_4](./md_pictures/img_4.png)
 
+训练相关信息保留在`tensorboard_runs`文件夹中。
 
+## 评估
+
+从[jianguoyun](https://www.jianguoyun.com/p/DeXpK34QgZ-EChjI9YcFIAA)下载预训练参数, 并将它们放置到 `talkingface/model/audio_driven_talkingface/IPLAP/test/checkpoints`中（两个模型的预训练模型均不大，已提前放置好并成功上传GitHub） 。然后运行以下命令：
+
+```
+python talkingface/model/audio_driven_talkingface/IPLAP/inference_single.py
+```
+
+本次复现我一共提供了三个不同的测试视频和四个不同的测试音频，要在其他视频上（非默认测试视频上）运行，请指定 --input 和 --audio 参数来传入视频和音频所在地址。

@@ -1,1 +1,2 @@
 from talkingface.model.audio_driven_talkingface.wav2lip import Wav2Lip, SyncNet_color
+from talkingface.model.audio_driven_talkingface.iplap import IPLAP
