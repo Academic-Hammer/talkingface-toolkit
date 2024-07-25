@@ -1,210 +1,369 @@
-# talkingface-toolkit
-## 框架整体介绍
-### checkpoints
-主要保存的是训练和评估模型所需要的额外的预训练模型，在对应文件夹的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/checkpoints/README.md)有更详细的介绍
 
-### datset
-存放数据集以及数据集预处理之后的数据，详细内容见dataset里的[README](https://github.com/Academic-Hammer/talkingface-toolkit/blob/main/dataset/README.md)
+# StyleHeat TalkingFace模型实现说明文档
+## 目录
+- [StyleHeat TalkingFace模型实现说明文档](#styleheat-talkingface模型实现说明文档)
+  - [目录](#目录)
+  - [简介](#简介)
+  - [团队成员分工](#团队成员分工)
+  - [快速使用](#快速使用)
+    - [预训练模型下载](#预训练模型下载)
+    - [模型推理](#模型推理)
+      - [视频重演](#视频重演)
+      - [图片重演](#图片重演)
+      - [音频重演](#音频重演)
+    - [模型训练](#模型训练)
+      - [VOX-StyleHeatWarpper](#vox-styleheatwarpper)
+      - [HDTF-StyleHeat](#hdtf-styleheat)
+  - [模型实现](#模型实现)
+## 简介
 
-### saved
-存放训练过程中保存的模型checkpoint, 训练过程中保存模型时自动创建
+本文档是（王菁芃,周楚舒,明楷,杨梓,潘静雯）小组成果中StyleHeat模型部分的说明文档。metaportrait模型部分在[metaportrait]()仓库中。
 
-### talkingface
-主要功能模块，包括所有核心代码
+StyleHeat是一种基于预训练 StyleGAN 模型的新型统一模型，它利用 StyleGAN 模型中出色的空间变换属性等潜在特征空间，实现一系列强大的功能，即高分辨率视频生成、通过驱动视频或音频进行自由控制以及灵活的面部视频生成。
 
-#### config
-根据模型和数据集名称自动生成所有模型、数据集、训练、评估等相关的配置信息
-```
-config/
+本项目是StyleHeat模型的在talkingface框架中的整合实现，部分代码取自仓库[StyleHEAT](https://github.com/OpenTalker/StyleHEAT)。
 
-├── configurator.py
+## 团队成员分工
 
-```
-#### data
-- dataprocess：模型特有的数据处理代码，（可以是对方仓库自己实现的音频特征提取、推理时的数据处理）。如果实现的模型有这个需求，就要建立一对应的文件
-- dataset：每个模型都要重载`torch.utils.data.Dataset` 用于加载数据。每个模型都要有一个`model_name+'_dataset.py'`文件. `__getitem__()`方法的返回值应处理成字典类型的数据。 <span style="color:red">(核心部分)</span>
-```
-data/
+本小组完成了metaportrait和styleheat模型修改工作，具体分工如下：
 
-├── dataprocess
+- **周楚舒**：统筹分工与时间安排，阅读metaportrait论文，配置实验环境，参与小组讨论，跑通了metaportrait代码，并将metaportrait代码的base模块接入toolkit，编写metaportrait模型的说明文档
+- **杨   梓**：阅读metaportrait论文，配置实验环境，参与小组讨论，跑通了metaportrait源代码，完成数据集整理和重构，对temporal super-resolution model模块代码重构，部分接口撰写和调试
+- **潘静雯**：阅读metaportrait论文和源代码，配置实验环境，参加小组讨论和sr_model的调试工作，完成Temporal Super-resolution Model模型的数据集下载和预处理，撰写实验报告
+- **王菁芃**：阅读styleheat论文，配置实验环境，参与小组讨论，进行数据集下载和预处理，负责模型推理与训练部分接口的调试与修改，编写styleheat模型说明文档
+- **明   楷**：阅读styleheat论文，配置实验环境，参与小组讨论，代码修改调试，撰写实验报告，进行loss计算
 
-| ├── wav2lip_process.py
+## 快速使用
 
-| ├── xxxx_process.py
-
-├── dataset
-
-| ├── wav2lip_dataset.py
-
-| ├── xxx_dataset.py
-```
-
-#### evaluate
-主要涉及模型评估的代码
-LSE metric 需要的数据是生成的视频列表
-SSIM metric 需要的数据是生成的视频和真实的视频列表
-
-#### model
-实现的模型的网络和对应的方法 <span style="color:red">（核心部分）</span>
-
-主要分三类：
-- audio-driven (音频驱动)
-- image-driven （图像驱动）
-- nerf-based （基于神经辐射场的方法）
-
-```
-model/
-
-├── audio_driven_talkingface
-
-| ├── wav2lip.py
-
-├── image_driven_talkingface
-
-| ├── xxxx.py
-
-├── nerf_based_talkingface
-
-| ├── xxxx.py
-
-├── abstract_talkingface.py
-
-```
-
-#### properties
-保存默认配置文件，包括：
-- 数据集配置文件
-- 模型配置文件
-- 通用配置文件
-
-需要根据对应模型和数据集增加对应的配置文件，通用配置文件`overall.yaml`一般不做修改
-```
-properties/
-
-├── dataset
-
-| ├── xxx.yaml
-
-├── model
-
-| ├── xxx.yaml
-
-├── overall.yaml
-
-```
-
-#### quick_start
-通用的启动文件，根据传入参数自动配置数据集和模型，然后训练和评估（一般不需要修改）
-```
-quick_start/
-
-├── quick_start.py
-
-```
-
-#### trainer
-训练、评估函数的主类。在trainer中，如果可以使用基类`Trainer`实现所有功能，则不需要写一个新的。如果模型训练有一些特有部分，则需要重载`Trainer`。需要重载部分可能主要集中于: `_train_epoch()`, `_valid_epoch()`。 重载的`Trainer`应该命名为：`{model_name}Trainer`
-```
-trainer/
-
-├── trainer.py
-
-```
-
-#### utils
-公用的工具类，包括`s3fd`人脸检测，视频抽帧、视频抽音频方法。还包括根据参数配置找对应的模型类、数据类等方法。
-一般不需要修改，但可以适当添加一些必须的且相对普遍的数据处理文件。
-
-## 使用方法
-### 环境要求
-- `python=3.8`
-- `torch==1.13.1+cu116`（gpu版，若设备不支持cuda可以使用cpu版）
-- `numpy==1.20.3`
-- `librosa==0.10.1`
-
-尽量保证上面几个包的版本一致
-
-提供了两种配置其他环境的方法：
-```
-pip install -r requirements.txt
-
-or
-
-conda env create -f environment.yml
-```
-
-建议使用conda虚拟环境！！！
-
-### 训练和评估
+使用python运行run_talkingface.py脚本即可。在参数中需给出模型名称：StyleHeat，数据集styleheat_vox。例如：
 
 ```bash
-python run_talkingface.py --model=xxxx --dataset=xxxx (--other_parameters=xxxxxx)
+python run_talkingface.py --model=StyleHeat --dataset=styleheat_vox
 ```
 
-### 权重文件
+若不再给出额外参数，则默认进行模型训练。
 
-- LSE评估需要的权重: syncnet_v2.model [百度网盘下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
-- wav2lip需要的lip expert 权重：lipsync_expert.pth [百度网下载](https://pan.baidu.com/s/1vQoL9FuKlPyrHOGKihtfVA?pwd=32hc)
+### 预训练模型下载
 
-## 可选论文：
-### Aduio_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| MakeItTalk | [paper](https://arxiv.org/abs/2004.12992) | [code](https://github.com/yzhou359/MakeItTalk) |
-| MEAD | [paper](https://wywu.github.io/projects/MEAD/support/MEAD.pdf) | [code](https://github.com/uniBruce/Mead) |
-| RhythmicHead | [paper](https://arxiv.org/pdf/2007.08547v1.pdf) | [code](https://github.com/lelechen63/Talking-head-Generation-with-Rhythmic-Head-Motion) |
-| PC-AVS | [paper](https://arxiv.org/abs/2104.11116) | [code](https://github.com/Hangz-nju-cuhk/Talking-Face_PC-AVS) |
-| EVP | [paper](https://openaccess.thecvf.com/content/CVPR2021/papers/Ji_Audio-Driven_Emotional_Video_Portraits_CVPR_2021_paper.pdf) | [code](https://github.com/jixinya/EVP) |
-| LSP | [paper](https://arxiv.org/abs/2109.10595) | [code](https://github.com/YuanxunLu/LiveSpeechPortraits) |
-| EAMM | [paper](https://arxiv.org/pdf/2205.15278.pdf) | [code](https://github.com/jixinya/EAMM/) |
-| DiffTalk | [paper](https://arxiv.org/abs/2301.03786) | [code](https://github.com/sstzal/DiffTalk) |
-| TalkLip | [paper](https://arxiv.org/pdf/2303.17480.pdf) | [code](https://github.com/Sxjdwang/TalkLip) |
-| EmoGen | [paper](https://arxiv.org/pdf/2303.11548.pdf) | [code](https://github.com/sahilg06/EmoGen) |
-| SadTalker | [paper](https://arxiv.org/abs/2211.12194) | [code](https://github.com/OpenTalker/SadTalker) |
-| HyperLips | [paper](https://arxiv.org/abs/2310.05720) | [code](https://github.com/semchan/HyperLips) |
-| PHADTF | [paper](http://arxiv.org/abs/2002.10137) | [code](https://github.com/yiranran/Audio-driven-TalkingFace-HeadPose) |
-| VideoReTalking | [paper](https://arxiv.org/abs/2211.14758) | [code](https://github.com/OpenTalker/video-retalking#videoretalking--audio-based-lip-synchronization-for-talking-head-video-editing-in-the-wild-)
-|                                 |
+- 进行模型推演请下载[预训练模型](https://drive.google.com/drive/folders/1-m47oPsa3kxjgK5eSJ8g8sHzG4zr2oRc)，并放入checkpoints子目录下。
 
+  <details>
+      <figure class='table-figure'><table>
+  <thead>
+  <tr><th>checkpoints/Encoder_e4e.pth</th><th>Pre-trained E4E StyleGAN Inversion Encoder.</th></tr></thead>
+  <tbody><tr><td>checkpoints/hfgi.pth</td><td>Pre-trained HFGI StyleGAN Inversion Encoder.</td></tr><tr><td>checkpoints/StyleGAN_e4e.pth</td><td>Pre-trained StyleGAN.</td></tr><tr><td>checkpoints/ffhq_pca.pt</td><td>StyleGAN editing directions.</td></tr><tr><td>checkpoints/ffhq_PCA.npz</td><td>StyleGAN optimization parameters.</td></tr><tr><td>checkpoints/interfacegan_directions/</td><td>StyleGAN editing directions.</td></tr><tr><td>checkpoints/stylegan2_d_256.pth</td><td>Pre-trained StyleGAN discriminator.</td></tr><tr><td>checkpoints/model_ir_se50.pth</td><td>Pre-trained id-loss discriminator.</td></tr><tr><td>checkpoints/StyleHEAT_visual.pt</td><td>Pre-trained StyleHEAT model.</td></tr><tr><td>checkpoints/BFM</td><td>3DMM library. (Note the zip file should be unzipped to BFM/.)</td></tr><tr><td>checkpoints/Deep3D/epoch_20.pth</td><td>Pre-trained 3DMM extractor.</td></tr></tbody>
+  </table></figure></details>
 
+  **预训练文件说明**
 
-### Image_driven talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| PIRenderer | [paper](https://arxiv.org/pdf/2109.08379.pdf) | [code](https://github.com/RenYurui/PIRender) |
-| StyleHEAT | [paper](https://arxiv.org/pdf/2203.04036.pdf) | [code](https://github.com/OpenTalker/StyleHEAT) |
-| MetaPortrait | [paper](https://arxiv.org/abs/2212.08062) | [code](https://github.com/Meta-Portrait/MetaPortrait) |
-|                                 |
-### Nerf-based talkingface
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| AD-NeRF | [paper](https://arxiv.org/abs/2103.11078) | [code](https://github.com/YudongGuo/AD-NeRF) |
-| GeneFace | [paper](https://arxiv.org/abs/2301.13430) | [code](https://github.com/yerfor/GeneFace) |
-| DFRF | [paper](https://arxiv.org/abs/2207.11770) | [code](https://github.com/sstzal/DFRF) |
-|                                 |
-### text_to_speech
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| VITS | [paper](https://arxiv.org/abs/2106.06103) | [code](https://github.com/jaywalnut310/vits) |
-| Glow TTS | [paper](https://arxiv.org/abs/2005.11129) | [code](https://github.com/jaywalnut310/glow-tts) |
-| FastSpeech2 | [paper](https://arxiv.org/abs/2006.04558v1) | [code](https://github.com/ming024/FastSpeech2) |
-| StyleTTS2 | [paper](https://arxiv.org/abs/2306.07691) | [code](https://github.com/yl4579/StyleTTS2) |
-| Grad-TTS | [paper](https://arxiv.org/abs/2105.06337) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/Grad-TTS) | 
-| FastSpeech | [paper](https://arxiv.org/abs/1905.09263) | [code](https://github.com/xcmyz/FastSpeech) |
-|                                 |
-### voice_conversion
-| 模型简称 | 论文 | 代码仓库 |
-|:--------:|:--------:|:--------:|
-| StarGAN-VC | [paper](http://www.kecl.ntt.co.jp/people/kameoka.hirokazu/Demos/stargan-vc2/index.html) | [code](https://github.com/kamepong/StarGAN-VC) |
-| Emo-StarGAN | [paper](https://www.researchgate.net/publication/373161292_Emo-StarGAN_A_Semi-Supervised_Any-to-Many_Non-Parallel_Emotion-Preserving_Voice_Conversion) | [code](https://github.com/suhitaghosh10/emo-stargan) |
-| adaptive-VC | [paper](https://arxiv.org/abs/1904.05742) | [code](https://github.com/jjery2243542/adaptive_voice_conversion) |
-| DiffVC | [paper](https://arxiv.org/abs/2109.13821) | [code](https://github.com/huawei-noah/Speech-Backbones/tree/main/DiffVC) |
-| Assem-VC | [paper](https://arxiv.org/abs/2104.00931) | [code](https://github.com/maum-ai/assem-vc) |
-|               |
+- 如使用音频推演，请下载sadtalker[预训练模型](https://pan.baidu.com/s/1kb1BCPaLOWX1JJb9Czbn6w?pwd=sadt)和[离线包](https://pan.baidu.com/s/1P4fRgk9gaSutZnn8YW034Q?pwd=sadt),并根据sadtalker[说明](https://github.com/OpenTalker/SadTalker)放入对应的文件夹
 
-## 作业要求
-- 确保可以仅在命令行输入模型和数据集名称就可以训练、验证。（部分仓库没有提供训练代码的，可以不训练）
-- 每个组都要提交一个README文件，写明完成的功能、最终实现的训练、验证截图、所使用的依赖、成员分工等。
+### 模型推理
 
+#### 视频重演
 
+- **功能说明**
 
+  该功能基于源**视频**生成**相同身份**的TalkingFace视频
+
+- **参数说明**
+
+  使用视频进行重演需要额外指定运行模式为**推理模式**并给出**源视频**。
+
+  如需更改配置文件和输出路径，可通过相应参数修改。
+
+  ```bash
+  # 额外参数
+  --run_mode=infer
+  --video_source=./dataset/StyleHeat/videos/RD_Radio34_003_512.mp4
+  (可选) --config ./talkingface/properties/model/StyleHeat/inference.yaml
+  (可选) --output_dir=./dataset/StyleHeat/output
+  ```
+
+- **运行截图**
+
+  <img src="http://image.lynxcc.top/image-20240130085501935.png" alt="image-20240130085501935" />
+
+  <img src="http://image.lynxcc.top/image-20240130085547416.png" alt="image-20240130085547416" />
+
+- **结果示例**
+
+  左侧为原视频，右侧为模型生成视频
+
+  <img src="http://image.lynxcc.top/image-20240130085935768.png" alt="image-20240130085935768" />
+
+#### 图片重演
+
+- **功能说明**
+
+  该功能可用于**跨身份重演**，可使用**图片**模仿**源视频**生成TalkingFace视频。
+
+- **参数说明**
+
+  使用图片和视频进行重演需要额外指定运行模式为**推理模式**并给出**源视频**与**模仿者的面部图片**，要求图片长宽比例为1:1。
+
+  如跨身份重演需给出`--cross_id`参数；如果需要对齐（裁剪）图像，请指定`--if_align`；如需提取目标视频的3dmm参数请指定`--if_extract`；如需更改配置文件和输出路径，可通过相应参数修改。
+
+  ```bash
+  # 额外参数
+  --run_mode=infer
+  --video_source=./dataset/StyleHeat/videos/RD_Radio34_003_512.mp4
+  --image_source=./dataset/StyleHeat/images/100.jpg \
+  (可选) --cross_id
+  (可选) --if_extract
+  (可选) --if_align
+  (可选) --config ./talkingface/properties/model/StyleHeat/inference.yaml
+  (可选) --output_dir=./dataset/StyleHeat/output
+  ```
+
+- **运行截图**
+
+  <img src="http://image.lynxcc.top/image-20240130094424392.png" alt="image-20240130094424392" />
+
+- **结果示例**
+
+  左侧为原视频与原图片，右侧为模型生成视频
+
+  <img src="http://image.lynxcc.top/image-20240130094952910.png" alt="image-20240130094952910" />
+
+#### 音频重演
+
+- **功能说明**
+
+  该功能可用于**跨身份重演**，可使用**图片**和**音频**生成TalkingFace视频。
+
+- **参数说明**
+
+  使用图片和音频进行重演需要额外指定运行模式为**推理模式**并给出**源音频**与**面部图片**，要求图片长宽比例为1:1。
+
+  如跨身份重演需给出`--cross_id`参数；如果需要对齐（裁剪）图像，请指定`--if_align`；如需提取目标视频的3dmm参数请指定`--if_extract`；如需更改配置文件和输出路径，可通过相应参数修改。
+
+  ```bash
+  # 额外参数
+  --run_mode=infer
+  --audio_path=./dataset/StyleHeat/audios/RD_Radio31_000.wav
+  --image_source=./dataset/StyleHeat/images/100.jpg 
+  (可选) --cross_id
+  (可选) --if_extract
+  (可选) --if_align
+  (可选) --config ./talkingface/properties/model/StyleHeat/inference.yaml
+  (可选) --output_dir=./dataset/StyleHeat/output
+  ```
+
+- **运行截图**
+
+  <img src="http://image.lynxcc.top/image-20240130094424392.png" alt="image-20240130094424392" />
+
+- **结果示例**
+
+  左侧为原视频与原图片，右侧为模型生成视频
+
+  <img src="http://image.lynxcc.top/image-20240130094952910.png" alt="image-20240130094952910" />
+
+  > 注：推理中使用的示例视频可从[此处](https://drive.google.com/drive/folders/1-m47oPsa3kxjgK5eSJ8g8sHzG4zr2oRc?usp=sharing)下载
+
+### 模型训练
+
+模型训练分为两个阶段，要训练 VideoWarper，需使用VoxCelebA数据集；要训练整个框架还需HDTF数据集
+
+#### VOX-StyleHeatWarpper
+
+- **数据集准备**
+
+  该训练使用vox数据集，但需对数据进行预处理，使视频裁剪到适合训练的大小并保证人脸居中。为了提高训练的速率，还需提前提取出视频的3dmm参数。最后将训练数据统一存入lmdb数据库中。
+
+  - **数据集下载、裁剪与分割**
+
+    我们使用[Video Preprocessing](https://github.com/AliaksandrSiarohin/video-preprocessing) 进行数据集的下载与预处理。我们对原仓库脚本做了一些修订使其符合本项目，该代码已包含在`talkingface/data/dataprocess/video-preprocessing` 路径中。
+
+    预处理前，首先需要下载视频解释的文本文件，该预处理工具根据他下载所需的视频并处理成相应的格式。
+
+    ```bash
+    wget www.robots.ox.ac.uk/~vgg/data/voxceleb/data/vox2_test_txt.zip
+    unzip vox1_test_txt.zip
+    wget www.robots.ox.ac.uk/~vgg/data/voxceleb/data/vox2_dev_txt.zip
+    unzip vox1_dev_txt.zip
+    ```
+
+    由于特殊格式的限制，预处理只能使用从**Youtube**上下载的视频。需要提前在环境中安装**ffmpeg**和**youtube-dl**，并按目录下requirements.txt安装需要的包。
+
+    为了加速ffmpeg的处理速度，需要在环境中安装**Cuda**。如果无法使用Cuda，需要对代码中的命令进行修改。
+
+    此外，需要face-alignment库，请从仓库下载该部分代码并安装到环境中。
+
+    ```bash
+    git clone https://github.com/1adrianb/face-alignment
+    cd face-alignment
+    pip install -r requirements.txt
+    python setup.py install
+    ```
+
+    由于`youtube-dl`受法律限制停止更新，无法下载部分视频。因此我们使用**yt-dlp**进行代替，该工具已包含在预处理代码路径下。如需使用原来的`youtube-dl`，请将代码中的`yt-dlp`修改为`youtube-dl`。
+
+    可以使用如下命令对视频进行预处理。`--format`可以指定存储格式（png/mp4）。PNG可以获得更好的IO性能，但需要更多的存储空间。
+
+    ```bash
+    python crop_vox.py --workers 40 --device_ids 0,1,2,3,4,5,6,7 --format .mp4 --dataset_version 2
+    python crop_vox.py --workers 40 --device_ids 0,1,2,3,4,5,6,7 --format .mp4 --dataset_version 2 --data_range 10000-11252
+    ```
+
+  - **数据集参数提取与存储**
+
+    进行完数据集的下载并裁剪分割后，需要提取视频的3dmm参数并将其存入lmdb数据库中。该部分代码已包含在`talkingface/data/dataprocess/PIRender` 路径中。可参照[PIRenderer](https://github.com/RenYurui/PIRender)完成该部分内容，但我们同样对该部分代码进行了部分修改，例如将keypoints参数保存在数据库中用于StyleHeat的训练。
+
+    提取3dmm参数的过程使用了另外一个项目—— [Deep3DFaceReconstruction](https://github.com/microsoft/Deep3DFaceReconstruction)。下面是提取3dmm参数的过程：
+
+    ---
+
+    1. 按照他们的存储库的说明来构建 DeepFaceRecon 的环境。
+
+    2. 将提供的脚本复制到文件夹中`Deep3DFaceRecon_pytorch`。
+
+       ```
+       cp scripts/face_recon_videos.py ./Deep3DFaceRecon_pytorch
+       cp scripts/extract_kp_videos.py ./Deep3DFaceRecon_pytorch
+       cp scripts/coeff_detector.py ./Deep3DFaceRecon_pytorch
+       cp scripts/inference_options.py ./Deep3DFaceRecon_pytorch/options
+       cd Deep3DFaceRecon_pytorch
+       ```
+
+    3. 从视频中提取面部标志。
+
+       ```
+       python extract_kp_videos.py \
+       --input_dir path_to_viodes \
+       --output_dir path_to_keypoint \
+       --device_ids 0,1,2,3 \
+       --workers 12
+       ```
+
+       ![image-20240130112349173](http://image.lynxcc.top/image-20240130112349173.png)
+
+    4. 提取视频系数
+
+       ```
+       python face_recon_videos.py \
+       --input_dir path_to_videos \
+       --keypoint_dir path_to_keypoint \
+       --output_dir output_dir \
+       --inference_batch_size 100 \
+       --name=model_name \
+       --epoch=20 \
+       --model facerecon
+       ```
+
+       <img src="http://image.lynxcc.top/image-20240130112239415.png" alt="image-20240130112239415" />
+
+       ---
+
+       提取后，会获得keypoints与3dmm系数两部分信息，文件夹格式应如下所示：
+
+       ```bash
+       ${DATASET_ROOT_FOLDER}
+       └───path_to_videos
+           └───train
+               └───xxx.mp4
+               └───xxx.mp4
+               ...
+           └───test
+               └───xxx.mp4
+               └───xxx.mp4
+               ...
+       └───path_to_3dmm_coeff
+           └───train
+               └───xxx.mat
+               └───xxx.mat
+               ...
+           └───test
+               └───xxx.mat
+               └───xxx.mat
+               ...
+       ```
+
+       最后将视频和 3DMM 参数保存在 lmdb 文件中。请运行以下代码来执行此操作:
+
+       ```bash
+       python scripts/prepare_vox_lmdb.py \
+       --path path_to_videos \
+       --coeff_3dmm_path path_to_3dmm_coeff \
+       --out path_to_output_dir
+       ```
+
+       示例：
+
+       <img src="http://image.lynxcc.top/image-20240130112059849.png" alt="image-20240130112059849" />
+
+- **训练过程**
+
+  如训练模型请使用如下的脚本
+
+  ```bash
+  python run_talkingface.py --model=StyleHeat --dataset=styleheat_vox
+  ```
+
+  可指定的额外参数如下：
+
+  ```bash
+  --runmode train
+  --checkpoints_dir=./output
+  --config talkingface/properties/model/StyleHeat/video_warper_trainer.yaml
+  --name train_video_warper
+  --single_gpu	
+  ```
+
+- **运行示例**
+
+  <img src="http://image.lynxcc.top/image-20240130105956902.png" alt="image-20240130105956902" />
+
+  在output中生成的日志文件如下：
+
+  <img src="http://image.lynxcc.top/image-20240130110247353.png" alt="image-20240130110247353" />
+
+- **训练结果**
+
+  训练中会对模型进行评估，评估图片如下：
+
+  <img src="http://image.lynxcc.top/image-20240130110437352.png" alt="image-20240130110437352" />
+
+  随着训练epoch增加，生成的视频逐渐清晰，细节更加完整。
+
+  epoch04:
+
+  <img src="http://image.lynxcc.top/epoch_00002_iteration_000000024.jpg" alt="epoch_00002_iteration_000000024" style="zoom:50%;" />
+
+  epoch18:
+
+  <img src="http://image.lynxcc.top/epoch_00018_iteration_000000216.jpg" alt="epoch_00018_iteration_000000216" style="zoom: 50%;" />
+
+#### HDTF-StyleHeat
+
+- **数据集准备**
+
+  该训练使用HDTF数据集并进行简单预处理
+
+- **训练过程**
+
+  如训练模型请使用如下的脚本
+
+  ```bash
+  python run_talkingface.py --model=StyleHeat --dataset=styleheat_vox
+  ```
+
+  可指定的额外参数如下：
+
+  ```bash
+  --runmode train
+  --checkpoints_dir=./output
+  --config talkingface/properties/model/StyleHeat/video_styleheat_trainer.yaml
+  --name train_video_styleheat
+  --single_gpu	
+  ```
+
+- **运行示例**
+
+  <img src="http://image.lynxcc.top/image-20240130111541161.png" alt="image-20240130111541161" />
+
+## 模型实现
+
+- 由于增加了推理部分的内容，因此对quick_start.py进行了部分修改，增加了一个StyleHeat模型的特殊处理。
+- 由于模型拥有多个网络，且训练数据集存在数据库中而不是使用文件列表。因此训练过程直接重写了trainer.py中的fit函数，而获取数据集部分返回的则是加载后数据集列表的句柄。模型整体框架仍使用talkingface-toolkit结构

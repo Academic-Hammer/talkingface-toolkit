@@ -1,0 +1,6 @@
+data:
+
+model:
+    mode: inference
+    enable_audio: False
+    free_styler_path: checkpoints/StyleHEAT_visual.pt
