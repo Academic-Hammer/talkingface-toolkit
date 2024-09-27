@@ -419,10 +419,11 @@ def get_environment(config):
 def get_preprocess(dataset_name):
     r"""Automatically select dataset preprocess class based on dataset name
     """
-    model_file_name = dataset_name.lower()
+    del_file_name = dataset_name.lower()
     module_path = "talkingface.utils.data_process"
     model_module = importlib.import_module(module_path, __name__)
     try:
+        print(model_module, dataset_name + 'Preprocess')
         preprocess_class = getattr(model_module, dataset_name+'Preprocess')
     except:
         raise ValueError(

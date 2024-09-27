@@ -1,0 +1,69 @@
+# Mel
+num_mels : 80
+text_cleaners : ['english_cleaners']
+
+# FastSpeech
+vocab_size : 300
+max_seq_len : 3000
+
+# Transformer
+encoder_dim : 256
+encoder_n_layer : 4
+encoder_head : 2
+encoder_conv1d_filter_size : 1024
+
+decoder_dim : 256
+decoder_n_layer : 4
+decoder_head : 2
+decoder_conv1d_filter_size : 1024
+
+fft_conv1d_kernel:
+  - 9
+  - 1
+fft_conv1d_padding:
+  - 4
+  - 0
+
+duration_predictor_filter_size : 256
+duration_predictor_kernel_size : 3
+dropout : 0.1
+
+# STFT
+max_wav_value : 32768.0
+sampling_rate : 22050
+filter_length : 1024
+hop_length : 256
+win_length : 1024
+n_mel_channels : 80
+mel_fmin : 0.0
+mel_fmax : 8000.0
+
+# Path
+checkpoint_sub_dir: "/FastSpeech" # 和overall.yaml里checkpoint_dir拼起来作为最终目录
+temp_sub_dir: "/FastSpeech" # 和overall.yaml里temp_dir拼起来作为最终目录
+
+# Train
+batch_size : 512  #并不是真正的batch_size
+epochs : 2000
+n_warm_up_step : 4000
+train_data_num: 12500
+val_data_num : 300
+test_data_num : 300
+
+learning_rate : 1e-3
+weight_decay : 1e-6
+grad_clip_thresh : 1.0
+decay_step :
+  - 500000
+  - 1000000
+  - 2000000
+
+log_step : 5
+clear_Time : 20
+
+batch_expand_size : 32
+
+restore_step: 0
+
+waveglow_checkpoint_path: 'checkpoints/Tacotron2/waveglow_256channels.pt'
+wavglwo_net_path: 'talkingface/utils/waveglow'

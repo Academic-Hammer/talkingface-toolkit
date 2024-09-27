@@ -1,0 +1,10 @@
+data_root: 'dataset/LJSpeech/data'
+
+train_filelist: 'dataset/LJSpeech/filelist/train.txt'
+val_filelist: 'dataset/LJSpeech/filelist/val.txt'
+test_filelist: 'dataset/LJSpeech/filelist/test.txt'
+
+preprocessed_root: 'dataset/LJSpeech/ljspeech_preprocessed'
+LJSpeech_checkpoint_path: 'checkpoints/Tacotron2/waveglow_256channels.pt'
+
+need_preprocess: True
